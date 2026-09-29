@@ -1,0 +1,978 @@
+/* ======================================================
+   TOXICTIDE SAFETY STANDARDS — COMMAND CENTER STYLESHEET
+   All classes are prefixed with toxictide-safety- to avoid
+   collisions with other ToxicTide admin pages.
+   ====================================================== */
+
+.toxictide-safety-page {
+    /* Local color variables, scoped only to this page */
+    --tts-bg: #050b14;
+    --tts-bg-alt: #0a1626;
+    --tts-panel: #0d1a2b;
+    --tts-panel-alt: #10213570;
+    --tts-border: rgba(148, 197, 227, 0.14);
+    --tts-border-strong: rgba(148, 197, 227, 0.28);
+    --tts-text: #e3edf6;
+    --tts-text-dim: #9fb4c7;
+    --tts-cyan: #38e2ff;
+    --tts-cyan-dim: rgba(56, 226, 255, 0.15);
+    --tts-violet: #8b93ff;
+    --tts-green: #4ade9a;
+    --tts-amber: #f5b350;
+    --tts-red: #ff6b6b;
+
+    position: relative;
+    min-height: 100vh;
+    padding: 32px clamp(16px, 4vw, 48px) 80px;
+    background: radial-gradient(
+            ellipse at top,
+            #0c1c2e 0%,
+            var(--tts-bg) 55%
+        )
+        fixed;
+    color: var(--tts-text);
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    overflow-x: hidden;
+}
+
+/* Decorative background grid */
+.toxictide-safety-grid-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(56, 226, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 226, 255, 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 50% 0%, black 0%, transparent 75%);
+}
+
+/* ======================================================
+   NAVBAR
+   ====================================================== */
+.toxictide-safety-navbar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.toxictide-safety-navbar-system {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--tts-text-dim);
+    text-transform: uppercase;
+}
+
+.toxictide-safety-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--tts-panel);
+    border: 1px solid var(--tts-border);
+    color: var(--tts-text);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.toxictide-safety-back-btn:hover {
+    border-color: var(--tts-cyan);
+    background: var(--tts-panel-alt);
+    transform: translateX(-2px);
+}
+
+/* ======================================================
+   STATUS DOT (shared)
+   ====================================================== */
+.toxictide-safety-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tts-green);
+    box-shadow: 0 0 8px var(--tts-green);
+    flex-shrink: 0;
+}
+
+.toxictide-safety-status-dot.is-online {
+    background: var(--tts-green);
+    box-shadow: 0 0 8px var(--tts-green);
+    animation: tts-pulse 2.4s ease-in-out infinite;
+}
+
+.toxictide-safety-status-dot.is-error {
+    background: var(--tts-red);
+    box-shadow: 0 0 8px var(--tts-red);
+    animation: tts-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+/* ======================================================
+   HERO
+   ====================================================== */
+.toxictide-safety-hero {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 32px;
+    align-items: center;
+    padding: 40px clamp(20px, 4vw, 48px);
+    margin-bottom: 28px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, var(--tts-panel) 0%, #081321 100%);
+    border: 1px solid var(--tts-border);
+    overflow: hidden;
+}
+
+.toxictide-safety-hero-scanline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--tts-cyan), transparent);
+    opacity: 0.6;
+    animation: tts-scan 5s linear infinite;
+}
+
+@keyframes tts-scan {
+    0% { top: 0%; }
+    100% { top: 100%; }
+}
+
+.toxictide-safety-hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.toxictide-safety-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    color: var(--tts-cyan);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.toxictide-safety-title {
+    font-size: clamp(26px, 3.4vw, 40px);
+    font-weight: 800;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+    color: #f4fbff;
+}
+
+.toxictide-safety-subtitle {
+    max-width: 620px;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--tts-text-dim);
+    margin: 0 0 20px;
+}
+
+.toxictide-safety-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--tts-border-strong);
+    background: rgba(6, 16, 27, 0.6);
+}
+
+/* ======================================================
+   SAFETY THRESHOLD CORE (decorative visualization)
+   ====================================================== */
+.toxictide-safety-core {
+    position: relative;
+    width: clamp(180px, 20vw, 240px);
+    height: clamp(180px, 20vw, 240px);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toxictide-safety-core-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--tts-border-strong);
+}
+
+.toxictide-safety-core-ring--outer {
+    inset: 0;
+    border-color: rgba(56, 226, 255, 0.25);
+    animation: tts-rotate 22s linear infinite;
+    border-top-color: var(--tts-cyan);
+}
+
+.toxictide-safety-core-ring--mid {
+    inset: 18px;
+    border-color: rgba(139, 147, 255, 0.25);
+    animation: tts-rotate-reverse 16s linear infinite;
+    border-bottom-color: var(--tts-violet);
+}
+
+.toxictide-safety-core-ring--inner {
+    inset: 36px;
+    border-color: rgba(74, 222, 154, 0.2);
+    animation: tts-rotate 10s linear infinite;
+    border-left-color: var(--tts-green);
+}
+
+@keyframes tts-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes tts-rotate-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+.toxictide-safety-core-ticks {
+    position: absolute;
+    inset: 0;
+}
+
+.toxictide-safety-core-tick {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    width: 1px;
+    height: 8px;
+    background: rgba(148, 197, 227, 0.4);
+    transform-origin: 50% 100px;
+}
+
+.toxictide-safety-core-center {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+}
+
+.toxictide-safety-core-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--tts-text-dim);
+    text-transform: uppercase;
+}
+
+.toxictide-safety-core-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--tts-cyan);
+    text-shadow: 0 0 18px rgba(56, 226, 255, 0.35);
+}
+
+.toxictide-safety-core-caption {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(159, 180, 199, 0.6);
+    text-transform: uppercase;
+}
+
+/* ======================================================
+   OVERVIEW METRICS
+   ====================================================== */
+.toxictide-safety-overview {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.toxictide-safety-metric {
+    padding: 18px 20px;
+    border-radius: 10px;
+    background: var(--tts-panel);
+    border: 1px solid var(--tts-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toxictide-safety-metric-label {
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tts-text-dim);
+}
+
+.toxictide-safety-metric-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--tts-text);
+}
+
+/* ======================================================
+   ALERTS
+   ====================================================== */
+.toxictide-safety-alert {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid var(--tts-border);
+}
+
+.toxictide-safety-alert strong {
+    display: block;
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.toxictide-safety-alert p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--tts-text-dim);
+    line-height: 1.5;
+}
+
+.toxictide-safety-alert-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.toxictide-safety-alert--success {
+    background: rgba(74, 222, 154, 0.08);
+    border-color: rgba(74, 222, 154, 0.3);
+}
+
+.toxictide-safety-alert--success strong { color: var(--tts-green); }
+
+.toxictide-safety-alert--success .toxictide-safety-alert-icon {
+    background: rgba(74, 222, 154, 0.15);
+    color: var(--tts-green);
+}
+
+.toxictide-safety-alert--error {
+    background: rgba(255, 107, 107, 0.08);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.toxictide-safety-alert--error strong { color: var(--tts-red); }
+
+.toxictide-safety-alert--error .toxictide-safety-alert-icon {
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--tts-red);
+}
+
+/* ======================================================
+   PANEL HEADER (shared by form + registry)
+   ====================================================== */
+.toxictide-safety-panel-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.toxictide-safety-panel-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: var(--tts-cyan);
+    text-transform: uppercase;
+}
+
+.toxictide-safety-panel-header h2 {
+    margin: 8px 0 4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--tts-text);
+}
+
+.toxictide-safety-panel-header p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--tts-text-dim);
+}
+
+.toxictide-safety-syncing {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    color: var(--tts-amber);
+    letter-spacing: 0.08em;
+}
+
+.toxictide-safety-sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--tts-amber);
+    animation: tts-pulse 1s ease-in-out infinite;
+}
+
+/* ======================================================
+   FORM PANEL
+   ====================================================== */
+.toxictide-safety-form-panel {
+    position: relative;
+    z-index: 1;
+    padding: 28px clamp(18px, 3vw, 32px);
+    border-radius: 12px;
+    background: var(--tts-panel);
+    border: 1px solid var(--tts-border);
+    margin-bottom: 28px;
+}
+
+.toxictide-safety-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.toxictide-safety-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toxictide-safety-field--wide {
+    grid-column: 1 / -1;
+}
+
+.toxictide-safety-field label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--tts-text);
+    text-transform: uppercase;
+}
+
+.toxictide-safety-field-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--tts-violet);
+    background: rgba(139, 147, 255, 0.12);
+    border: 1px solid rgba(139, 147, 255, 0.3);
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+.toxictide-safety-field-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--tts-text-dim);
+}
+
+.toxictide-safety-field input,
+.toxictide-safety-field textarea {
+    width: 100%;
+    background: #08131f;
+    border: 1px solid var(--tts-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--tts-text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toxictide-safety-field input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.toxictide-safety-field input:focus,
+.toxictide-safety-field textarea:focus,
+.toxictide-safety-field input:focus-visible,
+.toxictide-safety-field textarea:focus-visible {
+    outline: none;
+    border-color: var(--tts-cyan);
+    box-shadow: 0 0 0 3px var(--tts-cyan-dim);
+}
+
+.toxictide-safety-field textarea {
+    resize: vertical;
+    line-height: 1.6;
+    min-height: 120px;
+}
+
+.toxictide-safety-threshold-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #08131f;
+    border: 1px solid var(--tts-border);
+    border-radius: 8px;
+    padding: 4px 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toxictide-safety-threshold-input:focus-within {
+    border-color: var(--tts-cyan);
+    box-shadow: 0 0 0 3px var(--tts-cyan-dim);
+}
+
+.toxictide-safety-threshold-input input {
+    border: none;
+    background: transparent;
+    padding: 10px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tts-cyan);
+}
+
+.toxictide-safety-threshold-input input:focus {
+    box-shadow: none;
+}
+
+.toxictide-safety-unit {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tts-text-dim);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.toxictide-safety-actions-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.toxictide-safety-btn-primary,
+.toxictide-safety-btn-secondary {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+}
+
+.toxictide-safety-btn-primary {
+    background: linear-gradient(135deg, var(--tts-cyan), #1f9fc4);
+    border: 1px solid rgba(56, 226, 255, 0.5);
+    color: #04141c;
+}
+
+.toxictide-safety-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(56, 226, 255, 0.25);
+}
+
+.toxictide-safety-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--tts-border-strong);
+    color: var(--tts-text);
+}
+
+.toxictide-safety-btn-secondary:hover {
+    border-color: var(--tts-cyan);
+    color: var(--tts-cyan);
+}
+
+/* ======================================================
+   REGISTRY / TABLE
+   ====================================================== */
+.toxictide-safety-registry {
+    position: relative;
+    z-index: 1;
+    padding: 28px clamp(18px, 3vw, 32px);
+    border-radius: 12px;
+    background: var(--tts-panel);
+    border: 1px solid var(--tts-border);
+}
+
+.toxictide-safety-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--tts-border);
+}
+
+.toxictide-safety-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.toxictide-safety-table thead th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tts-text-dim);
+    background: #081320;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--tts-border);
+    position: sticky;
+    top: 0;
+}
+
+.toxictide-safety-table tbody td {
+    padding: 16px;
+    border-bottom: 1px solid var(--tts-border);
+    vertical-align: top;
+    font-size: 13.5px;
+}
+
+.toxictide-safety-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.toxictide-safety-table tbody tr:hover {
+    background: rgba(56, 226, 255, 0.035);
+}
+
+.toxictide-safety-table tbody tr.is-editing {
+    background: rgba(245, 179, 80, 0.06);
+    box-shadow: inset 3px 0 0 var(--tts-amber);
+}
+
+.toxictide-safety-id-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    background: rgba(139, 147, 255, 0.12);
+    border: 1px solid rgba(139, 147, 255, 0.3);
+    color: var(--tts-violet);
+}
+
+.toxictide-safety-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(56, 226, 255, 0.1);
+    border: 1px solid rgba(56, 226, 255, 0.3);
+    color: var(--tts-cyan);
+}
+
+.toxictide-safety-threshold-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 110px;
+}
+
+.toxictide-safety-threshold-value {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--tts-text);
+}
+
+.toxictide-safety-threshold-unit {
+    font-size: 10.5px;
+    color: var(--tts-text-dim);
+    letter-spacing: 0.06em;
+    margin-top: -4px;
+}
+
+.toxictide-safety-threshold-scale {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(148, 197, 227, 0.12);
+    overflow: hidden;
+}
+
+.toxictide-safety-threshold-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--tts-cyan), var(--tts-violet));
+}
+
+.toxictide-safety-advisory {
+    max-width: 340px;
+}
+
+.toxictide-safety-advisory p {
+    margin: 0 0 6px;
+    line-height: 1.6;
+    color: var(--tts-text-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.toxictide-safety-readmore {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--tts-cyan);
+    cursor: pointer;
+}
+
+.toxictide-safety-readmore:hover {
+    text-decoration: underline;
+}
+
+.toxictide-safety-agency {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--tts-text);
+}
+
+.toxictide-safety-agency-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: rgba(74, 222, 154, 0.1);
+    border: 1px solid rgba(74, 222, 154, 0.3);
+    color: var(--tts-green);
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.toxictide-safety-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toxictide-safety-btn-edit,
+.toxictide-safety-btn-delete {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.toxictide-safety-btn-edit {
+    background: rgba(56, 226, 255, 0.1);
+    border: 1px solid rgba(56, 226, 255, 0.35);
+    color: var(--tts-cyan);
+}
+
+.toxictide-safety-btn-edit:hover {
+    background: rgba(56, 226, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.toxictide-safety-btn-delete {
+    background: rgba(255, 107, 107, 0.08);
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    color: var(--tts-red);
+}
+
+.toxictide-safety-btn-delete:hover {
+    background: rgba(255, 107, 107, 0.18);
+    transform: translateY(-1px);
+}
+
+/* ======================================================
+   SKELETON LOADING
+   ====================================================== */
+.toxictide-safety-skeleton-row td {
+    padding: 12px 16px;
+}
+
+.toxictide-safety-skeleton-bar {
+    height: 18px;
+    border-radius: 6px;
+    background: linear-gradient(
+        90deg,
+        rgba(148, 197, 227, 0.06) 25%,
+        rgba(148, 197, 227, 0.16) 37%,
+        rgba(148, 197, 227, 0.06) 63%
+    );
+    background-size: 400% 100%;
+    animation: tts-skeleton 1.6s ease infinite;
+}
+
+@keyframes tts-skeleton {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ======================================================
+   EMPTY STATE
+   ====================================================== */
+.toxictide-safety-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 48px 20px;
+}
+
+.toxictide-safety-empty-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(56, 226, 255, 0.1);
+    border: 1px solid rgba(56, 226, 255, 0.3);
+    color: var(--tts-cyan);
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.toxictide-safety-empty h3 {
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--tts-text);
+}
+
+.toxictide-safety-empty p {
+    margin: 0;
+    max-width: 360px;
+    font-size: 13px;
+    color: var(--tts-text-dim);
+    line-height: 1.6;
+}
+
+/* ======================================================
+   FOCUS VISIBILITY (accessibility)
+   ====================================================== */
+.toxictide-safety-page button:focus-visible,
+.toxictide-safety-page input:focus-visible,
+.toxictide-safety-page textarea:focus-visible {
+    outline: 2px solid var(--tts-cyan);
+    outline-offset: 2px;
+}
+
+/* ======================================================
+   RESPONSIVE BREAKPOINTS
+   ====================================================== */
+@media (max-width: 1024px) {
+    .toxictide-safety-hero {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+
+    .toxictide-safety-core {
+        margin: 20px auto 0;
+    }
+
+    .toxictide-safety-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .toxictide-safety-overview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .toxictide-safety-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 560px) {
+    .toxictide-safety-page {
+        padding: 20px 14px 60px;
+    }
+
+    .toxictide-safety-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .toxictide-safety-hero {
+        padding: 26px 18px;
+    }
+
+    .toxictide-safety-core {
+        width: 160px;
+        height: 160px;
+    }
+
+    .toxictide-safety-actions-row {
+        flex-direction: column;
+    }
+
+    .toxictide-safety-btn-primary,
+    .toxictide-safety-btn-secondary {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ======================================================
+   REDUCED MOTION SUPPORT
+   ====================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .toxictide-safety-hero-scanline,
+    .toxictide-safety-core-ring--outer,
+    .toxictide-safety-core-ring--mid,
+    .toxictide-safety-core-ring--inner,
+    .toxictide-safety-status-dot.is-online,
+    .toxictide-safety-status-dot.is-error,
+    .toxictide-safety-sync-dot,
+    .toxictide-safety-skeleton-bar {
+        animation: none !important;
+    }
+}
