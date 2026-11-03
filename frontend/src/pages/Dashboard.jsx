@@ -688,7 +688,7 @@ function Dashboard() {
           ← Back to Home
         </button>
 
-        <header className="tt-dashboard-hero">
+        <header className="tt-dashboard-hero tt-dashboard-sticky-hero">
           <div>
             <p className="tt-dashboard-eyebrow">
               TOXICTIDE OVERVIEW
@@ -792,7 +792,7 @@ function Dashboard() {
           HERO
       ====================================================== */}
 
-      <header className="tt-dashboard-hero">
+      <header className="tt-dashboard-hero tt-dashboard-sticky-hero">
         <div className="tt-dashboard-hero-copy">
           <p className="tt-dashboard-eyebrow">
             TOXICTIDE OVERVIEW
@@ -1179,18 +1179,6 @@ function Dashboard() {
               the Safety Check process.
             </p>
           </div>
-
-          <button
-            type="button"
-            className="tt-dashboard-small-button"
-            onClick={() =>
-              navigate(
-                "/data/safety-standards"
-              )
-            }
-          >
-            View All Standards →
-          </button>
         </div>
 
         {safetyStandards.length === 0 ? (
@@ -1412,46 +1400,14 @@ function Dashboard() {
       </section>
 
       {/* ======================================================
-          FINAL NAVIGATION
+          NAVIGATION NOTE
+
+          The duplicate "final navigation" button row that used
+          to repeat the four Quick Actions has been removed.
+          The Quick Actions panel above is now the single place
+          for moving to Water Map, Safety Check, Data Center,
+          and Community Report.
       ====================================================== */}
-
-      <section className="tt-dashboard-final-actions">
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/map")
-          }
-        >
-          🗺️ Explore Water Map
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/map")
-          }
-        >
-          🛡️ Check Water Safety
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/data")
-          }
-        >
-          📊 Explore Data
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/report")
-          }
-        >
-          📢 Report an Issue
-        </button>
-      </section>
     </div>
   );
 }
@@ -2608,45 +2564,6 @@ strong.mono {
 
 
 /* ============================================================
-   SMALL BUTTON
-============================================================ */
-
-.tt-dashboard-small-button {
-
-  padding: 8px 12px;
-
-  border:
-    1px solid var(--tt-border);
-
-  border-radius: 9px;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.035
-    );
-
-  color: var(--tt-cyan) !important;
-
-  cursor: pointer;
-}
-
-
-.tt-dashboard-small-button:hover {
-
-  background:
-    rgba(
-      34,
-      211,
-      238,
-      0.08
-    );
-}
-
-
-/* ============================================================
    SEARCH
 ============================================================ */
 
@@ -2953,65 +2870,6 @@ strong.mono {
 
 
 /* ============================================================
-   FINAL ACTIONS
-============================================================ */
-
-.tt-dashboard-final-actions {
-
-  max-width: 1600px;
-
-  margin: 0 auto;
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 10px;
-}
-
-
-.tt-dashboard-final-actions button {
-
-  padding: 11px 15px;
-
-  border:
-    1px solid var(--tt-border);
-
-  border-radius: 10px;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.035
-    );
-
-  color: var(--tt-text) !important;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-
-.tt-dashboard-final-actions button:hover {
-
-  transform: translateY(-2px);
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.07
-    );
-}
-
-
-/* ============================================================
    ERROR
 ============================================================ */
 
@@ -3314,18 +3172,6 @@ strong.mono {
   }
 
 
-  .tt-dashboard-final-actions {
-
-    flex-direction: column;
-  }
-
-
-  .tt-dashboard-final-actions button {
-
-    width: 100%;
-  }
-
-
   .tt-dashboard-data-note {
 
     padding: 14px;
@@ -3351,6 +3197,33 @@ strong.mono {
     transition-duration: 0.001ms !important;
   }
 
+}
+
+
+/* ============================================================
+   STICKY DASHBOARD HERO
+   Keep the title, description, and status card visible while
+   scrolling. This rule is deliberately placed after responsive
+   rules so they cannot override the sticky positioning.
+============================================================ */
+
+.tt-dashboard .tt-dashboard-sticky-hero {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  width: 100%;
+  margin: 0 auto 30px !important;
+  padding: 18px 0 20px;
+  background: #071229;
+  border-bottom: 1px solid var(--tt-border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 800px) {
+  .tt-dashboard .tt-dashboard-sticky-hero {
+    padding: 14px 0 16px;
+    margin-bottom: 24px !important;
+  }
 }
 
 `;

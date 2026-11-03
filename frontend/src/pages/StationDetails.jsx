@@ -575,15 +575,12 @@ function StationDetails() {
 
       <div className="map-page">
 
-        <button
-          className="back-button"
-          onClick={() =>
-            navigate("/map")
-          }
-        >
-          ← Back to Water Map
-        </button>
-
+        {/*
+          A single action is shown here. The previous
+          "Back to Water Map" button pointed to the same
+          place as "Choose a Monitoring Station" below,
+          so the duplicate was removed.
+        */}
 
         <div className="map-message error-message">
 
@@ -798,21 +795,63 @@ function StationDetails() {
 
         <div className="station-actions">
 
-          <button
-            className="secondary-button"
-            onClick={() =>
-              navigate(
-                "/safety",
-                {
-                  state: {
-                    station
+          {loading ? (
+
+            <button
+              className="secondary-button"
+              type="button"
+              disabled
+            >
+              Checking Measurement Availability...
+            </button>
+
+          ) : latestMeasurement ? (
+
+            <button
+              className="secondary-button"
+              onClick={() =>
+                navigate(
+                  "/safety",
+                  {
+                    state: {
+                      station
+                    }
                   }
-                }
-              )
-            }
-          >
-            Open Full Safety Check
-          </button>
+                )
+              }
+            >
+              Open Full Safety Check
+            </button>
+
+          ) : (
+
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                flexBasis: "100%",
+                padding: "16px",
+                borderRadius: "10px",
+                background: "#fff7e8",
+                border: "1px solid #f0d7a8",
+                color: "#684b16",
+                lineHeight: "1.6"
+              }}
+            >
+              <strong>
+                NO MEASUREMENT AVAILABLE
+              </strong>
+
+              <p style={{ margin: "6px 0 0" }}>
+                This station does not have a valid recorded
+                microcystin measurement. A safety check
+                cannot be completed using the available data.
+                Missing measurements are not treated as zero
+                or as a safe result.
+              </p>
+            </div>
+
+          )}
 
 
           <button
@@ -832,6 +871,16 @@ function StationDetails() {
           </button>
 
         </div>
+
+        {error && (
+          <div
+            className="map-message error-message"
+            role="alert"
+          >
+            {error}
+            {" "}Measurement availability could not be verified.
+          </div>
+        )}
 
       </div>
 

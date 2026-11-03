@@ -1,5 +1,5 @@
-// Import React's useState hook for storing page data and user selections
-import { useState } from "react";
+// Import React hooks for storing page data and checking station measurements
+import { useEffect, useState } from "react";
 
 // Import navigation tools for moving between pages
 import { useLocation, useNavigate } from "react-router-dom";
@@ -24,7 +24,7 @@ const IconPaw = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="9" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="17" cy="9" r="2" /><path d="M8 16c0-2.5 2-4 4-4s4 1.5 4 4-2 4-4 4-4-1.5-4-4z" /></svg>
 );
 const IconSwim = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1.5" /><path d="M5 12l3-2 3 2 3-2 3 2" /><path d="M2 18c1.5 1.5 3.5 1.5 5 0s3.5-1.5 5 0 3.5 1.5 5 0 3.5-1.5 5 0" /></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1.5" /><path d="M5 12l3-2 3 2 3-2 3 2" /><path d="M2 18c1.5 1.5 3.5 1.5 5 0s3.5-1.5 5 0 3.5 1.5 5 0 3.5 1.5 5 0" /></svg>
 );
 const IconGlass = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l-1.5 16.5a2 2 0 0 1-2 1.5h-5a2 2 0 0 1-2-1.5L6 3z" /><path d="M6.5 9h11" /></svg>
@@ -108,6 +108,85 @@ function SafetyCheck() {
   // Store an error message when the request fails
   const [error, setError] = useState("");
 
+  // Independently verify that this station has a usable official measurement.
+  // This also protects direct navigation to /safety, not only the Station Details button.
+  const [measurementStatus, setMeasurementStatus] = useState(
+    station?.STATION_ID ? "checking" : "missing-station"
+  );
+  const [measurementError, setMeasurementError] = useState("");
+
+
+  // ==========================================
+  // VERIFY MEASUREMENT AVAILABILITY
+  // ==========================================
+
+  useEffect(() => {
+    if (!station?.STATION_ID) {
+      setMeasurementStatus("missing-station");
+      return;
+    }
+
+    let isCurrent = true;
+
+    setMeasurementStatus("checking");
+    setMeasurementError("");
+
+    axios
+      .get(
+        `http://localhost:5000/api/measurements?stationId=${encodeURIComponent(
+          station.STATION_ID
+        )}`
+      )
+      .then((response) => {
+        if (!isCurrent) return;
+
+        const records = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.measurements)
+            ? response.data.measurements
+            : [];
+
+        const hasValidMeasurement = records.some((record) => {
+          const value = record?.MICROCYSTIN_UGL;
+          const hasNumericValue =
+            value !== null &&
+            value !== undefined &&
+            String(value).trim() !== "" &&
+            Number.isFinite(Number(value));
+
+          const sampleDate = record?.SAMPLE_DATE;
+          const hasValidDate =
+            sampleDate !== null &&
+            sampleDate !== undefined &&
+            String(sampleDate).trim() !== "" &&
+            !Number.isNaN(new Date(sampleDate).getTime());
+
+          return hasNumericValue && hasValidDate;
+        });
+
+        setMeasurementStatus(
+          hasValidMeasurement ? "available" : "unavailable"
+        );
+      })
+      .catch((requestError) => {
+        console.error(
+          "Failed to verify station measurement availability:",
+          requestError
+        );
+
+        if (!isCurrent) return;
+
+        setMeasurementStatus("error");
+        setMeasurementError(
+          "ToxicTide could not verify the station's measurement records. Please try again later. The application will not assume that missing or unverified data is safe."
+        );
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [station?.STATION_ID]);
+
 
   // ==========================================
   // CHECK WATER SAFETY
@@ -122,6 +201,14 @@ function SafetyCheck() {
         "No monitoring station was selected. Please choose a station from the Water Map."
       );
 
+      return;
+    }
+
+    // Prevent the safety API from being called without a valid measurement.
+    if (measurementStatus !== "available") {
+      setError(
+        "A valid official microcystin measurement is not available for this station. The safety check cannot be completed."
+      );
       return;
     }
 
@@ -227,9 +314,11 @@ function SafetyCheck() {
         `}</style>
 
         <div className="sc-shell">
-          <button className="sc-back-btn" onClick={() => navigate("/map")}>
-            <IconArrowLeft /> Back to Water Map
-          </button>
+          {/*
+            Keep one action for choosing a station. The previous
+            "Back to Water Map" button opened the same destination
+            as "Choose a Monitoring Station" below.
+          */}
 
           <div className="sc-missing-card">
             <div className="sc-missing-icon"><IconAlertTriangle /></div>
@@ -244,6 +333,197 @@ function SafetyCheck() {
 
     );
 
+  }
+
+
+  // ==========================================
+  // CHECKING / UNAVAILABLE / ERROR STATES
+  // ==========================================
+
+  if (measurementStatus === "checking") {
+    return (
+      <div className="sc-page">
+        <style>{`
+          .sc-page { min-height:100vh; background:#f6f8fa; padding:28px 18px; font-family:'Inter',system-ui,sans-serif; color:#0f172a; }
+          .sc-shell { max-width:640px; margin:60px auto 0; }
+          .sc-state-card { background:#fff; border:1px solid #e2e8f0; border-radius:20px; padding:38px 30px; text-align:center; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+          .sc-state-icon { width:62px; height:62px; border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; background:#e0f2fe; color:#0369a1; }
+          .sc-state-card h2 { margin:0 0 10px; font-size:20px; font-weight:800; }
+          .sc-state-card p { margin:0; color:#64748b; font-size:14px; line-height:1.65; }
+          .sc-state-spin { animation:scSpin 1s linear infinite; }
+          @keyframes scSpin { to { transform:rotate(360deg); } }
+        `}</style>
+        <div className="sc-shell">
+          <div className="sc-state-card">
+            <div className="sc-state-icon sc-state-spin"><IconLoader /></div>
+            <h2>Checking Station Measurements...</h2>
+            <p>ToxicTide is verifying whether this station has a valid official microcystin measurement before opening the safety check.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (measurementStatus === "unavailable") {
+    return (
+      <div className="sc-page">
+        <style>{`
+          .sc-page {
+            min-height: 100vh;
+            background: #f6f8fa;
+            padding: 28px 18px;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #0f172a;
+          }
+
+          .sc-shell {
+            max-width: 560px;
+            margin: 70px auto 0;
+          }
+
+          .sc-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 15px;
+            margin-bottom: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #fff;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          }
+
+          .sc-back-btn:hover {
+            background: #f8fafc;
+          }
+
+          .sc-state-card {
+            padding: 32px 26px;
+            border: 1px solid #fde68a;
+            border-radius: 14px;
+            background: #fff;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+          }
+
+          .sc-state-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            background: #fef3c7;
+            color: #b45309;
+          }
+
+          .sc-state-card h2 {
+            margin: 0 0 9px;
+            color: #92400e;
+            font-size: 19px;
+            font-weight: 800;
+          }
+
+          .sc-state-card p {
+            margin: 0 0 20px;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+
+          .sc-primary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 19px;
+            border: 0;
+            border-radius: 9px;
+            background: #0f172a;
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .sc-primary-btn:hover {
+            background: #1e293b;
+          }
+
+          @media (max-width: 600px) {
+            .sc-shell {
+              margin-top: 35px;
+            }
+
+            .sc-state-card {
+              padding: 26px 18px;
+            }
+          }
+        `}</style>
+
+        <div className="sc-shell">
+          {/*
+            "Return to Station Details" below already provides
+            this navigation with the selected station preserved.
+            The duplicate top return button was removed.
+          */}
+
+          <div className="sc-state-card">
+            <div className="sc-state-icon">
+              <IconAlertTriangle />
+            </div>
+
+            <h2>NO MEASUREMENT AVAILABLE</h2>
+
+            <p>
+              No valid official microcystin measurement is available for this
+              station. A safety check cannot be completed without a recorded
+              measurement.
+            </p>
+
+            <button
+              className="sc-primary-btn"
+              onClick={() => navigate("/station", { state: { station } })}
+            >
+              Return to Station Details
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (measurementStatus === "error") {
+    return (
+      <div className="sc-page">
+        <style>{`
+          .sc-page { min-height:100vh; background:#f6f8fa; padding:28px 18px; font-family:'Inter',system-ui,sans-serif; color:#0f172a; }
+          .sc-shell { max-width:640px; margin:60px auto 0; }
+          .sc-back-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:999px; border:1px solid #e2e8f0; background:#fff; color:#334155; font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:24px; }
+          .sc-state-card { background:#fff; border:1px solid #fecaca; border-radius:20px; padding:38px 30px; text-align:center; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+          .sc-state-icon { width:64px; height:64px; border-radius:999px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; background:#fee2e2; color:#dc2626; }
+          .sc-state-card h2 { margin:0 0 10px; font-size:20px; font-weight:800; color:#991b1b; }
+          .sc-state-card p { margin:0 0 22px; color:#64748b; font-size:14px; line-height:1.65; }
+          .sc-primary-btn { display:inline-flex; align-items:center; gap:8px; background:#0f172a; color:#fff; border:none; padding:12px 22px; border-radius:11px; font-size:14px; font-weight:700; cursor:pointer; }
+        `}</style>
+        <div className="sc-shell">
+          <button className="sc-back-btn" onClick={() => navigate("/station", { state: { station } })}>
+            <IconArrowLeft /> Back to Station Details
+          </button>
+          <div className="sc-state-card">
+            <div className="sc-state-icon"><IconAlertTriangle /></div>
+            <h2>Unable to Verify Measurements</h2>
+            <p>{measurementError}</p>
+            <button className="sc-primary-btn" onClick={() => window.location.reload()}>
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
 

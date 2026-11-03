@@ -745,10 +745,10 @@ function WaterMap() {
       {/* ------------------------------------------ */}
 
       <button
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/dashboard")}
         className="back-button"
       >
-        ← Back to Home
+        ← Back to Dashboard
       </button>
 
 
@@ -1018,11 +1018,17 @@ function WaterMap() {
       {/* ------------------------------------------ */}
 
       <MapContainer
-        center={[
-          39.5,
-          -98.35
+        // Fit the initial view to Ohio with a small margin.
+        // This does not restrict panning or zooming. All station records,
+        // markers, filters, popups, and safety calculations remain available.
+        bounds={[
+          [38.35, -84.85],
+          [42.05, -80.45]
         ]}
-        zoom={4}
+        boundsOptions={{
+          padding: [20, 20]
+        }}
+        zoomSnap={0.25}
         style={{
           height: "600px",
           width: "100%",

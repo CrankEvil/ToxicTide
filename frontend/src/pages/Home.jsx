@@ -23,11 +23,6 @@ function Home() {
         {/* Main public navigation */}
         <div className="nav-links">
 
-          {/* Home page */}
-          <Link to="/">
-            Home
-          </Link>
-
           {/* Main monitoring dashboard */}
           <Link to="/dashboard">
             Dashboard
@@ -104,22 +99,6 @@ function Home() {
               Explore Water Map
             </Link>
 
-
-            {/*
-              Safety Check requires a monitoring station
-              to be selected first.
-
-              Therefore, the user is taken to the Water Map,
-              where a station can be selected before opening
-              the Safety Check.
-            */}
-            <Link
-              to="/map"
-              className="secondary-button"
-            >
-              Check Water Safety
-            </Link>
-
           </div>
 
         </div>
@@ -190,7 +169,12 @@ function Home() {
 
 
           {/* ---------------------------------------- */}
-          {/* Interactive Water Map                   */}
+          {/* Interactive Water Map                    */}
+          {/*                                          */}
+          {/* Station details, measurement history and */}
+          {/* trends are opened from a station on the  */}
+          {/* map, so they are described here instead  */}
+          {/* of using a separate duplicate map link.  */}
           {/* ---------------------------------------- */}
 
           <Link
@@ -207,9 +191,9 @@ function Home() {
             </h3>
 
             <p>
-              Find monitoring stations and view available
-              station and water-safety information on an
-              interactive map.
+              Find monitoring stations on the map, then open a
+              station to view its details, recorded microcystin
+              measurements, date filters, and measurement trends.
             </p>
 
             <span className="feature-link">
@@ -220,37 +204,15 @@ function Home() {
 
 
           {/* ---------------------------------------- */}
-          {/* Station Details & Trends                */}
-          {/* ---------------------------------------- */}
-
-          <Link
-            to="/map"
-            className="feature-card"
-          >
-
-            <div className="feature-icon">
-              📊
-            </div>
-
-            <h3>
-              Station Details & Trends
-            </h3>
-
-            <p>
-              Select a monitoring station to examine
-              recorded microcystin measurements, dates,
-              filters, and measurement trends.
-            </p>
-
-            <span className="feature-link">
-              Find a Station →
-            </span>
-
-          </Link>
-
-
-          {/* ---------------------------------------- */}
-          {/* Water Safety Check                      */}
+          {/* Water Safety Check                       */}
+          {/*                                          */}
+          {/* Safety Check requires a monitoring       */}
+          {/* station to be selected first.            */}
+          {/*                                          */}
+          {/* Therefore, the user is taken to the      */}
+          {/* Water Map, where a station can be        */}
+          {/* selected before opening the Safety       */}
+          {/* Check.                                   */}
           {/* ---------------------------------------- */}
 
           <Link
@@ -267,9 +229,9 @@ function Home() {
             </h3>
 
             <p>
-              Select a station and user group to compare
-              available measurements with the applicable
-              safety threshold and advisory.
+              Select a station on the Water Map, then choose your
+              user group to compare available measurements with
+              the applicable safety threshold and advisory.
             </p>
 
             <span className="feature-link">
@@ -280,7 +242,41 @@ function Home() {
 
 
           {/* ---------------------------------------- */}
-          {/* Community Reporting                     */}
+          {/* Data Center                              */}
+          {/*                                          */}
+          {/* Gives this card its own destination      */}
+          {/* instead of repeating another Water Map   */}
+          {/* link.                                    */}
+          {/* ---------------------------------------- */}
+
+          <Link
+            to="/data"
+            className="feature-card"
+          >
+
+            <div className="feature-icon">
+              📊
+            </div>
+
+            <h3>
+              Data Center
+            </h3>
+
+            <p>
+              Browse the water types, counties, monitoring
+              stations, recorded measurements, and safety
+              standards stored in the ToxicTide database.
+            </p>
+
+            <span className="feature-link">
+              Explore Data →
+            </span>
+
+          </Link>
+
+
+          {/* ---------------------------------------- */}
+          {/* Community Reporting                      */}
           {/* ---------------------------------------- */}
 
           <Link
@@ -374,7 +370,7 @@ function Home() {
             </div>
 
             <h3>
-              Swimmers & Families
+              Swimmers &amp; Families
             </h3>
 
             <p>
@@ -417,7 +413,7 @@ function Home() {
 
       <footer className="footer">
 
-        <div className="footer-content">
+        <div className="footer-content" style={{ display: "flex", justifyContent: "flex-start" }}>
 
 
           {/* -------------------------------------- */}
@@ -437,57 +433,6 @@ function Home() {
 
           </div>
 
-
-          {/* -------------------------------------- */}
-          {/* Footer Quick Links                     */}
-          {/* -------------------------------------- */}
-
-          <div className="footer-links">
-
-            {/* Footer section title */}
-            <p
-              style={{
-                margin: "0 0 8px 0",
-                fontSize: "12px",
-                fontWeight: "700",
-                letterSpacing: "1.5px",
-                color: "#7dd3fc"
-              }}
-            >
-              QUICK LINKS
-            </p>
-
-
-            {/* Home */}
-            <Link to="/">
-              Home
-            </Link>
-
-
-            {/* Dashboard */}
-            <Link to="/dashboard">
-              Dashboard
-            </Link>
-
-
-            {/* Water Map */}
-            <Link to="/map">
-              Water Map
-            </Link>
-
-
-            {/* Data Center */}
-            <Link to="/data">
-              Data Center
-            </Link>
-
-
-            {/* Community Report */}
-            <Link to="/report">
-              Community Report
-            </Link>
-
-          </div>
 
         </div>
 

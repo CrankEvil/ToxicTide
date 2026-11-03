@@ -27,9 +27,7 @@ app.use(express.json());
 
 // Enable CORS for the React frontend
 app.use(cors());
-
-const PORT = 5000;
-
+const PORT = process.env.PORT || 5000;
 
 // ======================================================
 // PUBLIC SERVER TEST
@@ -1620,9 +1618,9 @@ app.get("/api/safety", (req, res) => {
 
 // Keep app.listen at the very bottom so every route
 // has already been registered before the server starts.
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
 
     console.log(
-        `ToxicTide server running on http://localhost:${PORT}`
+        `ToxicTide server running on port ${PORT}`
     );
 });

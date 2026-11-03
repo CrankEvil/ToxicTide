@@ -1449,109 +1449,6 @@ const TC_CSS = `
 
 
 /* ============================================================
-   FOOTER
-   ============================================================ */
-
-.tc-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-top: clamp(34px, 6vh, 64px);
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.tc-return {
-  position: relative;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 22px;
-  border: 1px solid rgba(0, 229, 255, 0.24);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(4, 26, 47, 0.6),
-      rgba(2, 9, 20, 0.6)
-    );
-  color: var(--ink-2);
-  font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.26em;
-  cursor: pointer;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 12px) 0,
-    100% 12px,
-    100% 100%,
-    12px 100%,
-    0 calc(100% - 12px)
-  );
-  transition:
-    color 240ms ease,
-    border-color 240ms ease,
-    box-shadow 320ms ease;
-}
-
-.tc-return svg {
-  width: 15px;
-  height: 15px;
-  transition: transform 320ms var(--ease);
-}
-
-.tc-return::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -70%;
-  width: 50%;
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(0, 229, 255, 0.28),
-      transparent
-    );
-  transform: skewX(-18deg);
-  transition: left 700ms var(--ease);
-}
-
-.tc-return:hover {
-  color: var(--ink-1);
-  border-color: rgba(0, 229, 255, 0.7);
-  box-shadow: 0 0 34px -8px rgba(0, 229, 255, 0.5);
-}
-
-.tc-return:hover::after {
-  left: 120%;
-}
-
-.tc-return:hover svg {
-  transform: translateX(-5px);
-}
-
-.tc-return:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 3px;
-}
-
-.tc-footer-meta {
-  display: flex;
-  gap: 22px;
-  flex-wrap: wrap;
-  font-size: 8.5px;
-  font-weight: 600;
-  letter-spacing: 0.26em;
-  color: var(--ink-3);
-}
-
-
-/* ============================================================
    RESPONSIVE
    ============================================================ */
 
@@ -1631,17 +1528,6 @@ const TC_CSS = `
   .tc-module-icon svg {
     width: 22px;
     height: 22px;
-  }
-
-  .tc-footer {
-    justify-content: center;
-    text-align: center;
-  }
-
-  .tc-return {
-    width: 100%;
-    justify-content: center;
-    padding: 15px 22px;
   }
 
   .tc-terminate {
@@ -1812,19 +1698,6 @@ function IconArrow() {
         {...S}
         strokeWidth="1.8"
         d="M4 12h14M13 6.5 18.5 12 13 17.5"
-      />
-    </svg>
-  );
-}
-
-
-function IconBack() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        {...S}
-        strokeWidth="1.8"
-        d="M20 12H6M11 6.5 5.5 12 11 17.5"
       />
     </svg>
   );
@@ -3303,37 +3176,12 @@ function AdminDashboard() {
 
 
         {/* =====================================================
-            FOOTER
+            FOOTER NAVIGATION REMOVED
+
+            The public-system shortcut and footer metadata were
+            removed to keep administration navigation focused.
+            Module navigation and the header logout remain unchanged.
             ===================================================== */}
-
-        <footer className="tc-footer">
-
-          <button
-            type="button"
-            className="tc-return"
-            onClick={() => navigate("/")}
-          >
-
-            <IconBack />
-
-            RETURN TO PUBLIC SYSTEM
-
-          </button>
-
-
-          <div className="tc-footer-meta">
-
-            <span>
-              TOXICTIDE ENVIRONMENTAL INTELLIGENCE
-            </span>
-
-            <span>
-              ADMINISTRATION LAYER
-            </span>
-
-          </div>
-
-        </footer>
 
       </div>
 
