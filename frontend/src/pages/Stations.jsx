@@ -88,15 +88,15 @@ function Stations() {
                 ] = await Promise.all([
 
                     fetch(
-                        "http://localhost:5000/api/stations"
+                        "https://toxictide-backend.onrender.com/api/stations"
                     ),
 
                     fetch(
-                        "http://localhost:5000/api/water-types"
+                        "https://toxictide-backend.onrender.com/api/water-types"
                     ),
 
                     fetch(
-                        "http://localhost:5000/api/counties"
+                        "https://toxictide-backend.onrender.com/api/counties"
                     )
 
                 ]);

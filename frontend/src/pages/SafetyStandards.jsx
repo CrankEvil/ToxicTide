@@ -62,7 +62,7 @@ function SafetyStandards() {
                 setError("");
 
                 const response = await fetch(
-                    "http://localhost:5000/api/safety-standards"
+                    "https://toxictide-backend.onrender.com/api/safety-standards"
                 );
 
                 if (!response.ok) {

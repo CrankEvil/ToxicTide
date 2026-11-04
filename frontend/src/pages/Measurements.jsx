@@ -70,7 +70,7 @@ function Measurements() {
                 setError("");
 
                 const response = await fetch(
-                    "http://localhost:5000/api/measurements/all"
+                    "https://toxictide-backend.onrender.com/api/measurements/all"
                 );
 
                 if (!response.ok) {

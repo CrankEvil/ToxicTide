@@ -98,15 +98,15 @@ function WaterMap() {
         ] = await Promise.all([
 
           axios.get(
-            "http://localhost:5000/api/stations"
+            "https://toxictide-backend.onrender.com/api/stations"
           ),
 
           axios.get(
-            "http://localhost:5000/api/measurements/all"
+            "https://toxictide-backend.onrender.com/api/measurements/all"
           ),
 
           axios.get(
-            "http://localhost:5000/api/safety-standards"
+            "https://toxictide-backend.onrender.com/api/safety-standards"
           )
 
         ]);

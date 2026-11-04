@@ -463,8 +463,8 @@ function AdminMeasurements() {
     const loadData = async () => {
         try {
             const [measurementResponse, stationResponse] = await Promise.all([
-                adminFetch("http://localhost:5000/api/admin/measurements"),
-                adminFetch("http://localhost:5000/api/admin/stations")
+                adminFetch("https://toxictide-backend.onrender.com/api/admin/measurements"),
+                adminFetch("https://toxictide-backend.onrender.com/api/admin/stations")
             ]);
             if (!measurementResponse.ok || !stationResponse.ok) {
                 throw new Error("Failed to load data");
@@ -505,7 +505,7 @@ function AdminMeasurements() {
             let response;
             if (editingId) {
                 response = await adminFetch(
-                    `http://localhost:5000/api/admin/measurements/${editingId}`,
+                    `https://toxictide-backend.onrender.com/api/admin/measurements/${editingId}`,
                     {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
@@ -518,7 +518,7 @@ function AdminMeasurements() {
                 );
             } else {
                 response = await adminFetch(
-                    "http://localhost:5000/api/admin/measurements",
+                    "https://toxictide-backend.onrender.com/api/admin/measurements",
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -577,7 +577,7 @@ function AdminMeasurements() {
         setDeletingId(sampleId);
         try {
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/measurements/${sampleId}`,
+                `https://toxictide-backend.onrender.com/api/admin/measurements/${sampleId}`,
                 {
                     method: "DELETE"
                 }

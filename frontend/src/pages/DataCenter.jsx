@@ -82,11 +82,11 @@ function DataCenter() {
                 measurementsResponse,
                 standardsResponse
             ] = await Promise.all([
-                fetch("http://localhost:5000/api/water-types"),
-                fetch("http://localhost:5000/api/counties"),
-                fetch("http://localhost:5000/api/stations"),
-                fetch("http://localhost:5000/api/measurements/all"),
-                fetch("http://localhost:5000/api/safety-standards")
+                fetch("https://toxictide-backend.onrender.com/api/water-types"),
+                fetch("https://toxictide-backend.onrender.com/api/counties"),
+                fetch("https://toxictide-backend.onrender.com/api/stations"),
+                fetch("https://toxictide-backend.onrender.com/api/measurements/all"),
+                fetch("https://toxictide-backend.onrender.com/api/safety-standards")
             ]);
 
             // Make sure all API requests succeeded.

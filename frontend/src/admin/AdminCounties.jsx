@@ -973,7 +973,7 @@ function AdminCounties() {
     // ========================================================
 
     // Ask the backend for every county record.
-    // Endpoint: GET http://localhost:5000/api/admin/counties
+    // Endpoint: GET https://toxictide-backend.onrender.com/api/admin/counties
     // On success: store the records in `counties`.
     // On failure: store the backend's error message in `error`.
     const fetchCounties = async () => {
@@ -984,7 +984,7 @@ function AdminCounties() {
             setError("");
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/counties"
+                "https://toxictide-backend.onrender.com/api/admin/counties"
             );
 
             const data = await response.json();
@@ -1026,7 +1026,7 @@ function AdminCounties() {
 
 
     // Send a new county to the backend.
-    // Endpoint: POST http://localhost:5000/api/admin/counties
+    // Endpoint: POST https://toxictide-backend.onrender.com/api/admin/counties
     // Body sent: { countyCode, state } (both trimmed of extra spaces).
     // On success: show a success message, clear the form, and reload the list.
     // On failure: show the backend's actual error message.
@@ -1040,7 +1040,7 @@ function AdminCounties() {
         try {
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/counties",
+                "https://toxictide-backend.onrender.com/api/admin/counties",
                 {
                     method: "POST",
                     headers: {
@@ -1102,7 +1102,7 @@ function AdminCounties() {
 
 
     // Save the edited state value for one county.
-    // Endpoint: PUT http://localhost:5000/api/admin/counties/{code}
+    // Endpoint: PUT https://toxictide-backend.onrender.com/api/admin/counties/{code}
     // Body sent: { state } (trimmed of extra spaces). Only the state value
     // is editable here — the county code itself is not changed.
     // On success: show a success message, leave edit mode, reload the list.
@@ -1115,7 +1115,7 @@ function AdminCounties() {
         try {
 
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/counties/${encodeURIComponent(code)}`,
+                `https://toxictide-backend.onrender.com/api/admin/counties/${encodeURIComponent(code)}`,
                 {
                     method: "PUT",
                     headers: {
@@ -1160,7 +1160,7 @@ function AdminCounties() {
     // The county code is URL-encoded with encodeURIComponent() because county
     // codes can contain characters (like spaces or symbols) that are not
     // safe to put directly into a URL.
-    // Endpoint: DELETE http://localhost:5000/api/admin/counties/{code}
+    // Endpoint: DELETE https://toxictide-backend.onrender.com/api/admin/counties/{code}
     // On success: show a success message and reload the list.
     // On failure: show the backend's actual error message (for example, the
     // "this county is still in use" error).
@@ -1180,7 +1180,7 @@ function AdminCounties() {
         try {
 
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/counties/${encodeURIComponent(code)}`,
+                `https://toxictide-backend.onrender.com/api/admin/counties/${encodeURIComponent(code)}`,
                 {
                     method: "DELETE"
                 }

@@ -9,7 +9,7 @@ import "../App.css";
    ① CONFIGURATION  —  unchanged from your file
    ══════════════════════════════════════════════════════════════════════════ */
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://toxictide-backend.onrender.com/api";
 
 // Set true to show the small request-trace panel under the console.
 const DEBUG = false;

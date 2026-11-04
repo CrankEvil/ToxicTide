@@ -57,7 +57,7 @@ function WaterTypes() {
 
                 const response =
                     await axios.get(
-                        "http://localhost:5000/api/water-types"
+                        "https://toxictide-backend.onrender.com/api/water-types"
                     );
 
 

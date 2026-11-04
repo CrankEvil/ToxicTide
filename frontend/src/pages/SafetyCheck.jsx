@@ -133,7 +133,7 @@ function SafetyCheck() {
 
     axios
       .get(
-        `http://localhost:5000/api/measurements?stationId=${encodeURIComponent(
+        `https://toxictide-backend.onrender.com/api/measurements?stationId=${encodeURIComponent(
           station.STATION_ID
         )}`
       )
@@ -236,7 +236,7 @@ function SafetyCheck() {
     // The backend performs the database comparison.
     axios
       .get(
-        `http://localhost:5000/api/safety?stationId=${encodeURIComponent(
+        `https://toxictide-backend.onrender.com/api/safety?stationId=${encodeURIComponent(
           station.STATION_ID
         )}&userGroup=${encodeURIComponent(userGroup)}`
       )

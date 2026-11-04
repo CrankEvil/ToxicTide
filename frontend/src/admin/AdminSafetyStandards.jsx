@@ -58,7 +58,7 @@ function AdminSafetyStandards() {
 
         try {
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/safety-standards"
+                "https://toxictide-backend.onrender.com/api/admin/safety-standards"
             );
 
             if (!response.ok) {
@@ -113,7 +113,7 @@ function AdminSafetyStandards() {
             if (editingId) {
                 // Send a PUT request when editing an existing standard.
                 response = await adminFetch(
-                    `http://localhost:5000/api/admin/safety-standards/${editingId}`,
+                    `https://toxictide-backend.onrender.com/api/admin/safety-standards/${editingId}`,
                     {
                         method: "PUT",
                         headers: {
@@ -132,7 +132,7 @@ function AdminSafetyStandards() {
             } else {
                 // Send a POST request when adding a new standard.
                 response = await adminFetch(
-                    "http://localhost:5000/api/admin/safety-standards",
+                    "https://toxictide-backend.onrender.com/api/admin/safety-standards",
                     {
                         method: "POST",
                         headers: {
@@ -208,7 +208,7 @@ function AdminSafetyStandards() {
 
         try {
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/safety-standards/${standardId}`,
+                `https://toxictide-backend.onrender.com/api/admin/safety-standards/${standardId}`,
                 {
                     method: "DELETE"
                 }

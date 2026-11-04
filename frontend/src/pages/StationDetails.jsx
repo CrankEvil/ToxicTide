@@ -91,7 +91,7 @@ function StationDetails() {
 
         const response =
           await axios.get(
-            `http://localhost:5000/api/measurements?stationId=${encodeURIComponent(
+            `https://toxictide-backend.onrender.com/api/measurements?stationId=${encodeURIComponent(
               station.STATION_ID
             )}`
           );
@@ -144,7 +144,7 @@ function StationDetails() {
 
         const response =
           await axios.get(
-            "http://localhost:5000/api/safety-standards"
+            "https://toxictide-backend.onrender.com/api/safety-standards"
           );
 
 

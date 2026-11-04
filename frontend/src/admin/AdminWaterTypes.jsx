@@ -540,7 +540,7 @@ function ClassificationCore() {
    ══════════════════════════════════════════════════════════════════════════ */
 
 // One place for the backend address instead of repeating the URL everywhere.
-const API_BASE = "http://localhost:5000/api/admin/water-types";
+const API_BASE = "https://toxictide-backend.onrender.com/api/admin/water-types";
 
 function AdminWaterTypes() {
 

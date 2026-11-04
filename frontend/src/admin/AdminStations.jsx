@@ -149,7 +149,7 @@ function AdminStations() {
             setError("");
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/stations"
+                "https://toxictide-backend.onrender.com/api/admin/stations"
             );
 
             const data = await response.json();
@@ -184,7 +184,7 @@ function AdminStations() {
         try {
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/water-types"
+                "https://toxictide-backend.onrender.com/api/admin/water-types"
             );
 
             const data = await response.json();
@@ -211,7 +211,7 @@ function AdminStations() {
         try {
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/counties"
+                "https://toxictide-backend.onrender.com/api/admin/counties"
             );
 
             const data = await response.json();
@@ -257,7 +257,7 @@ function AdminStations() {
         try {
 
             const response = await adminFetch(
-                "http://localhost:5000/api/admin/stations",
+                "https://toxictide-backend.onrender.com/api/admin/stations",
                 {
                     method: "POST",
                     headers: {
@@ -343,7 +343,7 @@ function AdminStations() {
         try {
 
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/stations/${encodeURIComponent(id)}`,
+                `https://toxictide-backend.onrender.com/api/admin/stations/${encodeURIComponent(id)}`,
                 {
                     method: "PUT",
                     headers: {
@@ -412,7 +412,7 @@ function AdminStations() {
         try {
 
             const response = await adminFetch(
-                `http://localhost:5000/api/admin/stations/${encodeURIComponent(id)}`,
+                `https://toxictide-backend.onrender.com/api/admin/stations/${encodeURIComponent(id)}`,
                 {
                     method: "DELETE"
                 }

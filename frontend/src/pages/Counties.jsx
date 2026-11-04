@@ -110,7 +110,7 @@ function Counties() {
                 setError("");
 
                 const response = await fetch(
-                    "http://localhost:5000/api/counties"
+                    "https://toxictide-backend.onrender.com/api/counties"
                 );
 
                 if (!response.ok) {

@@ -218,7 +218,7 @@ function CommunityReport() {
 
         // Load real monitoring stations from the backend.
         axios
-            .get("http://localhost:5000/api/stations")
+            .get("https://toxictide-backend.onrender.com/api/stations")
 
             .then((response) => {
 
@@ -343,7 +343,7 @@ function CommunityReport() {
             // Send the community observation to the
             // existing ToxicTide community-report API.
             await axios.post(
-                "http://localhost:5000/api/community-reports",
+                "https://toxictide-backend.onrender.com/api/community-reports",
                 {
                     stationId: formData.stationId || null,
                     reportDate: formData.reportDate,

@@ -920,7 +920,7 @@ function AdminCommunityReports() {
     // ========================================================
 
     // Load all community reports.
-    // Endpoint: GET http://localhost:5000/api/community-reports
+    // Endpoint: GET https://toxictide-backend.onrender.com/api/community-reports
     // On success: store the array in `reports` (or an empty array if the
     // backend ever returns something that is not an array).
     // On failure: show the same error message as before.
@@ -930,7 +930,7 @@ function AdminCommunityReports() {
             setError("");
 
             const response = await axios.get(
-                "http://localhost:5000/api/admin/community-reports"
+                "https://toxictide-backend.onrender.com/api/admin/community-reports"
             );
 
             setReports(
@@ -966,7 +966,7 @@ function AdminCommunityReports() {
     }, []);
 
     // Update the status of one community report.
-    // Endpoint: PUT http://localhost:5000/api/community-reports/{reportId}/status
+    // Endpoint: PUT https://toxictide-backend.onrender.com/api/community-reports/{reportId}/status
     // Body sent: { status } — one of Pending, Reviewed or Resolved.
     // On success: reload the list so the page shows the saved value.
     // On failure: show the same error message as before.
@@ -979,7 +979,7 @@ function AdminCommunityReports() {
             setError("");
 
             await axios.put(
-               `http://localhost:5000/api/admin/community-reports/${reportId}/status`,
+               `https://toxictide-backend.onrender.com/api/admin/community-reports/${reportId}/status`,
                 {
                     status,
                 }
@@ -1003,7 +1003,7 @@ function AdminCommunityReports() {
     // Delete one community report.
     // A confirm() dialog is shown first because a deleted report cannot be
     // recovered. Nothing is sent to the backend unless the admin agrees.
-    // Endpoint: DELETE http://localhost:5000/api/community-reports/{reportId}
+    // Endpoint: DELETE https://toxictide-backend.onrender.com/api/community-reports/{reportId}
     // On success: reload the list. On failure: show the same error message.
     const deleteReport = async (reportId) => {
         const confirmed = window.confirm(
@@ -1019,7 +1019,7 @@ function AdminCommunityReports() {
             setError("");
 
             await axios.delete(
-               `http://localhost:5000/api/admin/community-reports/${reportId}`
+               `https://toxictide-backend.onrender.com/api/admin/community-reports/${reportId}`
             );
 
             await loadReports();
