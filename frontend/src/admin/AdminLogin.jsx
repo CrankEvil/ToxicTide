@@ -1601,7 +1601,7 @@ function useCssRamp(rootRef) {
    ⑤ PARTICLE + BALL ENGINE  (one canvas, one rAF loop, no libraries)
    ══════════════════════════════════════════════════════════════════════════ */
 
-const TIER_COUNTS = { low: 90, mid: 220, high: 420 };
+const TIER_COUNTS = { low: 32, mid: 110, high: 220 };
 
 function StadiumCanvas({ engineRef, tier, paused }) {
   const canvasRef = useRef(null);
@@ -1615,7 +1615,9 @@ function StadiumCanvas({ engineRef, tier, paused }) {
     let h = 0;
     let dpr = 1;
     let raf = 0;
+    let running = false;
     let last = performance.now();
+    let lastPaint = 0;
 
     const state = {
       mode: "idle",
@@ -1630,7 +1632,7 @@ function StadiumCanvas({ engineRef, tier, paused }) {
     const COUNT = TIER_COUNTS[tier] ?? 220;
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, tier === "low" ? 1.5 : 2);
+      dpr = Math.min(window.devicePixelRatio || 1, tier === "low" ? 1 : tier === "mid" ? 1.35 : 1.75);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.floor(w * dpr);
@@ -1855,7 +1857,15 @@ function StadiumCanvas({ engineRef, tier, paused }) {
 
     /* ── main loop ────────────────────────────────────────────────────── */
     const frame = (now) => {
+      if (!running || document.hidden) return;
+
       raf = requestAnimationFrame(frame);
+
+      // Limit canvas rendering on less powerful devices.
+      const frameInterval = tier === "low" ? 1000 / 30 : tier === "mid" ? 1000 / 45 : 1000 / 60;
+      if (now - lastPaint < frameInterval) return;
+      lastPaint = now;
+
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       state.time += dt;
@@ -1966,9 +1976,28 @@ function StadiumCanvas({ engineRef, tier, paused }) {
       drawBall(dt);
     };
 
+    const startLoop = () => {
+      if (running || document.hidden) return;
+      running = true;
+      last = performance.now();
+      lastPaint = 0;
+      raf = requestAnimationFrame(frame);
+    };
+
+    const stopLoop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopLoop();
+      else startLoop();
+    };
+
     resize();
-    raf = requestAnimationFrame(frame);
+    startLoop();
     window.addEventListener("resize", resize);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     const onPointer = (e) => {
       state.pointer.x = e.clientX / window.innerWidth;
@@ -1999,9 +2028,10 @@ function StadiumCanvas({ engineRef, tier, paused }) {
     };
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       engineRef.current = null;
     };
   }, [engineRef, tier]);
@@ -2425,8 +2455,7 @@ saveAdminSession(data.token, data.admin?.username ?? username);
       // likelihood: CORS is not enabled on the backend, the backend is not
       // running, the port is wrong, or an extension blocked the request.
       fail(
-        "Unable to connect to the ToxicTide server. Check that the backend is " +
-          "running on port 5000 and that CORS is enabled on it."
+        "Unable to connect to the ToxicTide server. Please check your internet connection and try again."
       );
     }
   };
