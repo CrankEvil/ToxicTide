@@ -3,8 +3,7 @@ const db = require("./db");
 // Express handles our backend API
 const express = require("express");
 
-// CORS allows our React frontend on port 5173
-// to communicate with the backend on port 5000
+// CORS allows our React frontend to communicate with the backend
 const cors = require("cors");
 
 const bcrypt = require("bcryptjs");
@@ -27,7 +26,9 @@ app.use(express.json());
 
 // Enable CORS for the React frontend
 app.use(cors());
+
 const PORT = process.env.PORT || 5000;
+
 
 // ======================================================
 // PUBLIC SERVER TEST
@@ -54,10 +55,10 @@ app.get("/api/stations", (req, res) => {
             s.COUNTY_CODE,
             s.LATITUDE,
             s.LONGITUDE
-        FROM STATION s
-        JOIN WATER_TYPES wt
+        FROM station s
+        JOIN water_types wt
             ON s.TYPE_ID = wt.TYPE_ID
-        JOIN COUNTIES c
+        JOIN counties c
             ON s.COUNTY_CODE = c.COUNTY_CODE
     `;
 
@@ -97,7 +98,7 @@ app.get("/api/measurements", (req, res) => {
             STATION_ID,
             SAMPLE_DATE,
             MICROCYSTIN_UGL
-        FROM CYANOTOXINS_MEASUREMENTS
+        FROM cyanotoxins_measurements
         WHERE STATION_ID = ?
         ORDER BY SAMPLE_DATE DESC
     `;
@@ -131,8 +132,8 @@ app.get("/api/measurements/all", (req, res) => {
             s.STATION_NAME,
             m.SAMPLE_DATE,
             m.MICROCYSTIN_UGL
-        FROM CYANOTOXINS_MEASUREMENTS m
-        LEFT JOIN STATION s
+        FROM cyanotoxins_measurements m
+        LEFT JOIN station s
             ON m.STATION_ID = s.STATION_ID
         ORDER BY m.SAMPLE_DATE DESC
     `;
@@ -165,7 +166,7 @@ app.get("/api/safety-standards", (req, res) => {
             THRESHOLD_UGL,
             ADVISORY_MESSAGE,
             CITING_AGENCY
-        FROM SAFETY_STANDARDS
+        FROM safety_standards
         ORDER BY STANDARD_ID
     `;
 
@@ -194,7 +195,7 @@ app.get("/api/water-types", (req, res) => {
         SELECT
             TYPE_ID,
             TYPE_NAME
-        FROM WATER_TYPES
+        FROM water_types
         ORDER BY TYPE_ID
     `;
 
@@ -223,7 +224,7 @@ app.get("/api/counties", (req, res) => {
         SELECT
             COUNTY_CODE,
             STATE
-        FROM COUNTIES
+        FROM counties
         ORDER BY COUNTY_CODE
     `;
 
@@ -266,7 +267,7 @@ app.post("/api/admin/login", (req, res) => {
             ADMIN_ID,
             USERNAME,
             PASSWORD_HASH
-        FROM ADMIN_USERS
+        FROM admin_users
         WHERE USERNAME = ?
     `;
 
@@ -322,7 +323,7 @@ app.post("/api/admin/login", (req, res) => {
 
 // Every route beginning with /api/admin now requires
 // a valid administrator token.
-//
+
 // IMPORTANT:
 // /api/admin/login was defined above this middleware,
 // so login itself remains publicly accessible.
@@ -339,7 +340,7 @@ app.get("/api/admin/water-types", (req, res) => {
         SELECT
             TYPE_ID,
             TYPE_NAME
-        FROM WATER_TYPES
+        FROM water_types
         ORDER BY TYPE_ID
     `;
 
@@ -372,7 +373,7 @@ app.post("/api/admin/water-types", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO WATER_TYPES
+        INSERT INTO water_types
         (
             TYPE_ID,
             TYPE_NAME
@@ -418,7 +419,7 @@ app.put("/api/admin/water-types/:id", (req, res) => {
     }
 
     const sql = `
-        UPDATE WATER_TYPES
+        UPDATE water_types
         SET TYPE_NAME = ?
         WHERE TYPE_ID = ?
     `;
@@ -458,7 +459,7 @@ app.delete("/api/admin/water-types/:id", (req, res) => {
     const typeId = req.params.id;
 
     const sql = `
-        DELETE FROM WATER_TYPES
+        DELETE FROM water_types
         WHERE TYPE_ID = ?
     `;
 
@@ -496,7 +497,7 @@ app.get("/api/admin/counties", (req, res) => {
         SELECT
             COUNTY_CODE,
             STATE
-        FROM COUNTIES
+        FROM counties
         ORDER BY COUNTY_CODE
     `;
 
@@ -529,7 +530,7 @@ app.post("/api/admin/counties", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO COUNTIES
+        INSERT INTO counties
         (
             COUNTY_CODE,
             STATE
@@ -575,7 +576,7 @@ app.put("/api/admin/counties/:code", (req, res) => {
     }
 
     const sql = `
-        UPDATE COUNTIES
+        UPDATE counties
         SET STATE = ?
         WHERE COUNTY_CODE = ?
     `;
@@ -615,7 +616,7 @@ app.delete("/api/admin/counties/:code", (req, res) => {
     const countyCode = req.params.code;
 
     const sql = `
-        DELETE FROM COUNTIES
+        DELETE FROM counties
         WHERE COUNTY_CODE = ?
     `;
 
@@ -659,10 +660,10 @@ app.get("/api/admin/stations", (req, res) => {
             c.STATE,
             s.LATITUDE,
             s.LONGITUDE
-        FROM STATION s
-        JOIN WATER_TYPES wt
+        FROM station s
+        JOIN water_types wt
             ON s.TYPE_ID = wt.TYPE_ID
-        JOIN COUNTIES c
+        JOIN counties c
             ON s.COUNTY_CODE = c.COUNTY_CODE
         ORDER BY s.STATION_ID
     `;
@@ -706,7 +707,7 @@ app.post("/api/admin/stations", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO STATION
+        INSERT INTO station
         (
             STATION_ID,
             STATION_NAME,
@@ -772,7 +773,7 @@ app.put("/api/admin/stations/:id", (req, res) => {
     }
 
     const sql = `
-        UPDATE STATION
+        UPDATE station
         SET
             STATION_NAME = ?,
             TYPE_ID = ?,
@@ -824,7 +825,7 @@ app.delete("/api/admin/stations/:id", (req, res) => {
     const stationId = req.params.id;
 
     const sql = `
-        DELETE FROM STATION
+        DELETE FROM station
         WHERE STATION_ID = ?
     `;
 
@@ -867,8 +868,8 @@ app.get("/api/admin/measurements", (req, res) => {
             s.STATION_NAME,
             m.SAMPLE_DATE,
             m.MICROCYSTIN_UGL
-        FROM CYANOTOXINS_MEASUREMENTS m
-        JOIN STATION s
+        FROM cyanotoxins_measurements m
+        JOIN station s
             ON m.STATION_ID = s.STATION_ID
         ORDER BY
             m.SAMPLE_DATE DESC,
@@ -912,7 +913,7 @@ app.post("/api/admin/measurements", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO CYANOTOXINS_MEASUREMENTS
+        INSERT INTO cyanotoxins_measurements
         (
             SAMPLE_ID,
             STATION_ID,
@@ -974,7 +975,7 @@ app.put("/api/admin/measurements/:id", (req, res) => {
     }
 
     const sql = `
-        UPDATE CYANOTOXINS_MEASUREMENTS
+        UPDATE cyanotoxins_measurements
         SET
             STATION_ID = ?,
             SAMPLE_DATE = ?,
@@ -1025,7 +1026,7 @@ app.delete("/api/admin/measurements/:id", (req, res) => {
     const sampleId = req.params.id;
 
     const sql = `
-        DELETE FROM CYANOTOXINS_MEASUREMENTS
+        DELETE FROM cyanotoxins_measurements
         WHERE SAMPLE_ID = ?
     `;
 
@@ -1072,7 +1073,7 @@ app.get("/api/admin/safety-standards", (req, res) => {
             THRESHOLD_UGL,
             ADVISORY_MESSAGE,
             CITING_AGENCY
-        FROM SAFETY_STANDARDS
+        FROM safety_standards
         ORDER BY STANDARD_ID
     `;
 
@@ -1117,7 +1118,7 @@ app.post("/api/admin/safety-standards", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO SAFETY_STANDARDS
+        INSERT INTO safety_standards
         (
             STANDARD_ID,
             USER_GROUP,
@@ -1182,7 +1183,7 @@ app.put("/api/admin/safety-standards/:id", (req, res) => {
     }
 
     const sql = `
-        UPDATE SAFETY_STANDARDS
+        UPDATE safety_standards
         SET
             USER_GROUP = ?,
             THRESHOLD_UGL = ?,
@@ -1232,7 +1233,7 @@ app.delete("/api/admin/safety-standards/:id", (req, res) => {
     const standardId = req.params.id;
 
     const sql = `
-        DELETE FROM SAFETY_STANDARDS
+        DELETE FROM safety_standards
         WHERE STANDARD_ID = ?
     `;
 
@@ -1296,7 +1297,7 @@ app.post("/api/community-reports", (req, res) => {
     }
 
     const sql = `
-        INSERT INTO COMMUNITY_REPORTS
+        INSERT INTO community_reports
         (
             STATION_ID,
             REPORT_DATE,
@@ -1373,8 +1374,8 @@ app.get("/api/admin/community-reports", (req, res) => {
             r.SEVERITY,
             r.STATUS,
             r.CREATED_AT
-        FROM COMMUNITY_REPORTS r
-        LEFT JOIN STATION s
+        FROM community_reports r
+        LEFT JOIN station s
             ON r.STATION_ID = s.STATION_ID
         ORDER BY r.CREATED_AT DESC
     `;
@@ -1424,7 +1425,7 @@ app.put(
         }
 
         const sql = `
-            UPDATE COMMUNITY_REPORTS
+            UPDATE community_reports
             SET STATUS = ?
             WHERE REPORT_ID = ?
         `;
@@ -1476,7 +1477,7 @@ app.delete(
         const reportId = req.params.id;
 
         const sql = `
-            DELETE FROM COMMUNITY_REPORTS
+            DELETE FROM community_reports
             WHERE REPORT_ID = ?
         `;
 
@@ -1545,8 +1546,8 @@ app.get("/api/safety", (req, res) => {
             ss.THRESHOLD_UGL,
             ss.ADVISORY_MESSAGE,
             ss.CITING_AGENCY
-        FROM CYANOTOXINS_MEASUREMENTS m
-        JOIN SAFETY_STANDARDS ss
+        FROM cyanotoxins_measurements m
+        JOIN safety_standards ss
             ON ss.USER_GROUP = ?
         WHERE m.STATION_ID = ?
           AND m.MICROCYSTIN_UGL IS NOT NULL
