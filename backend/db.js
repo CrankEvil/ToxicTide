@@ -1,18 +1,27 @@
 
-// Load environment variables from the .env file
+// Load environment variables
 require("dotenv").config();
 
 const mysql = require("mysql2");
 const fs = require("fs");
 const path = require("path");
 
-// Locate the Aiven CA certificate inside the backend folder
-const caPath = path.join(__dirname, "ca.pem");
+// Load Aiven CA certificate
+let caCertificate;
 
-// Read the Aiven CA certificate
-const caCertificate = fs.readFileSync(caPath);
+if (process.env.DB_CA_CERT_BASE64) {
+    // Render: Read certificate from environment variable
+    caCertificate = Buffer.from(
+        process.env.DB_CA_CERT_BASE64,
+        "base64"
+    );
+} else {
+    // Local development: Read certificate from backend/ca.pem
+    const caPath = path.join(__dirname, "ca.pem");
+    caCertificate = fs.readFileSync(caPath);
+}
 
-// Create the connection to the ToxicTide Aiven MySQL database
+// Create Aiven MySQL connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
@@ -20,21 +29,25 @@ const db = mysql.createConnection({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
 
-    // Secure SSL connection required by Aiven
     ssl: {
         ca: caCertificate,
         rejectUnauthorized: true
     }
 });
 
-// Check the database connection
+// Connect to database
 db.connect((err) => {
     if (err) {
-        console.error("Aiven MySQL connection failed:", err.message);
+        console.error(
+            "Aiven MySQL connection failed:",
+            err.message
+        );
         return;
     }
 
-    console.log("Connected to ToxicTide Aiven MySQL database!");
+    console.log(
+        "Connected to ToxicTide Aiven MySQL database!"
+    );
 });
 
 module.exports = db;
