@@ -5,6 +5,29 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      PERFORMANCE: open the network connections early.
+
+      Without these, the browser cannot even begin the
+      DNS + TCP + TLS handshake to the backend until React
+      has downloaded, parsed and mounted. These hints let
+      that handshake happen in parallel with the page load,
+      which removes roughly 200-500ms from the first data
+      request.
+
+      These are hints only. If a hint is ignored or fails,
+      the application still works exactly as before.
+    -->
+    <link rel="preconnect" href="https://toxictide-backend.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://toxictide-backend.onrender.com" />
+
+    <!-- Water Map dependencies: OpenStreetMap tiles and Leaflet marker images -->
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="dns-prefetch" href="https://unpkg.com" />
+
     <title>ToxicTide</title>
   </head>
 

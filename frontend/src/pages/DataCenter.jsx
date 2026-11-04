@@ -68,7 +68,76 @@ function DataCenter() {
     // LOAD DATABASE COUNTS
     // ============================================
 
+    /*
+     * FAST PATH
+     *
+     * The Data Center only displays five record counts, so it
+     * now asks the backend for those five numbers directly.
+     *
+     * Previously it downloaded all five public tables in full -
+     * including the entire measurement history - and then called
+     * .length on each one. The numbers shown are identical, but
+     * five large requests are replaced by one tiny one.
+     */
     const loadCounts = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await fetch(
+                "https://toxictide-backend.onrender.com/api/stats"
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load database information");
+            }
+
+            const stats = await response.json();
+
+            if (!stats || typeof stats !== "object") {
+                throw new Error("Unexpected statistics format");
+            }
+
+            setCounts({
+                waterTypes: Number(stats.waterTypes) || 0,
+                counties: Number(stats.counties) || 0,
+                stations: Number(stats.stations) || 0,
+                measurements: Number(stats.measurements) || 0,
+                standards: Number(stats.standards) || 0
+            });
+
+        } catch (err) {
+
+            /*
+             * SAFETY NET
+             *
+             * If the statistics endpoint is not available - for
+             * example the frontend is deployed before the backend
+             * - fall back to the original behaviour and count the
+             * five public tables on the client instead. The page
+             * keeps working either way.
+             */
+            console.warn(
+                "Using legacy Data Center counts:",
+                err
+            );
+
+            await loadCountsLegacy();
+
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    /*
+     * FALLBACK PATH
+     *
+     * This is the original Data Center loading logic, kept
+     * unchanged so the page still works if /api/stats is
+     * unavailable.
+     */
+    const loadCountsLegacy = async () => {
         try {
             setLoading(true);
             setError("");

@@ -6,6 +6,11 @@ const express = require("express");
 // CORS allows our React frontend to communicate with the backend
 const cors = require("cors");
 
+// Compression shrinks every JSON response before it is sent.
+// Water-quality JSON compresses very well, so this makes the
+// API several times faster without changing any data.
+const compression = require("compression");
+
 const bcrypt = require("bcryptjs");
 
 // Admin login token helpers
@@ -27,7 +32,34 @@ app.use(express.json());
 // Enable CORS for the React frontend
 app.use(cors());
 
+// Compress responses (gzip/deflate). Applied to every route.
+app.use(compression());
+
 const PORT = process.env.PORT || 5000;
+
+
+// ======================================================
+// HTTP CACHING HELPER FOR PUBLIC READ-ONLY DATA
+// ======================================================
+
+// Express already generates an ETag for every JSON response.
+// This header tells the browser to always ask the server
+// "has this changed?" before reusing it.
+//
+// Result:
+// - Unchanged data returns 304 Not Modified with NO body,
+//   so repeat page visits are almost free.
+// - The data is NEVER stale, because the server is asked
+//   every single time.
+//
+// This is used only on public read-only endpoints. Admin
+// endpoints are deliberately left uncached.
+function publicCaching(res) {
+    res.set(
+        "Cache-Control",
+        "public, max-age=0, must-revalidate"
+    );
+}
 
 
 // ======================================================
@@ -72,6 +104,8 @@ app.get("/api/stations", (req, res) => {
             });
         }
 
+        publicCaching(res);
+
         res.json(results);
     });
 });
@@ -113,6 +147,8 @@ app.get("/api/measurements", (req, res) => {
             });
         }
 
+        publicCaching(res);
+
         res.json(results);
     });
 });
@@ -148,6 +184,70 @@ app.get("/api/measurements/all", (req, res) => {
             });
         }
 
+        publicCaching(res);
+
+        res.json(results);
+    });
+});
+
+
+// ======================================================
+// PUBLIC LATEST-MEASUREMENT-PER-STATION API
+// ======================================================
+
+// Returns ONLY the newest non-null microcystin measurement
+// for each station.
+//
+// Why this exists:
+// The Water Map only ever displays the latest measurement
+// per station, but it previously had to download the entire
+// measurement history and reduce it inside the browser.
+// Doing that reduction in SQL sends a few dozen rows instead
+// of the whole table.
+//
+// The returned columns are IDENTICAL to /api/measurements/all,
+// so this is a drop-in replacement for any caller that only
+// needs the latest value per station.
+app.get("/api/stations/latest", (req, res) => {
+
+    const sql = `
+        SELECT
+            m.SAMPLE_ID,
+            m.STATION_ID,
+            s.STATION_NAME,
+            m.SAMPLE_DATE,
+            m.MICROCYSTIN_UGL
+        FROM cyanotoxins_measurements m
+        JOIN (
+            SELECT
+                STATION_ID,
+                MAX(SAMPLE_DATE) AS LATEST_DATE
+            FROM cyanotoxins_measurements
+            WHERE MICROCYSTIN_UGL IS NOT NULL
+            GROUP BY STATION_ID
+        ) latest
+            ON m.STATION_ID = latest.STATION_ID
+           AND m.SAMPLE_DATE = latest.LATEST_DATE
+        LEFT JOIN station s
+            ON m.STATION_ID = s.STATION_ID
+        WHERE m.MICROCYSTIN_UGL IS NOT NULL
+        ORDER BY
+            m.SAMPLE_DATE DESC,
+            m.SAMPLE_ID DESC
+    `;
+
+    db.query(sql, (err, results) => {
+
+        if (err) {
+            console.error(err);
+
+            return res.status(500).json({
+                error: "Failed to fetch latest measurements"
+            });
+        }
+
+        publicCaching(res);
+
         res.json(results);
     });
 });
@@ -180,6 +280,8 @@ app.get("/api/safety-standards", (req, res) => {
             });
         }
 
+        publicCaching(res);
+
         res.json(results);
     });
 });
@@ -208,6 +310,8 @@ app.get("/api/water-types", (req, res) => {
                 error: "Failed to fetch water types"
             });
         }
+
+        publicCaching(res);
 
         res.json(results);
     });
@@ -238,7 +342,84 @@ app.get("/api/counties", (req, res) => {
             });
         }
 
+        publicCaching(res);
+
         res.json(results);
+    });
+});
+
+
+// ======================================================
+// PUBLIC DATABASE STATISTICS API
+// ======================================================
+
+// Returns one row containing the record count of every
+// public data section shown by the Data Center.
+//
+// Why this exists:
+// The Data Center previously downloaded all five public
+// tables in full - including the entire measurement history -
+// only to call .length on each one. This returns the same
+// five numbers in a single tiny request.
+//
+// The station count deliberately mirrors the JOIN used by
+// /api/stations, so the number shown is exactly the same as
+// before.
+app.get("/api/stats", (req, res) => {
+
+    const sql = `
+        SELECT
+            (
+                SELECT COUNT(*)
+                FROM water_types
+            ) AS waterTypes,
+
+            (
+                SELECT COUNT(*)
+                FROM counties
+            ) AS counties,
+
+            (
+                SELECT COUNT(*)
+                FROM station s
+                JOIN water_types wt
+                    ON s.TYPE_ID = wt.TYPE_ID
+                JOIN counties c
+                    ON s.COUNTY_CODE = c.COUNTY_CODE
+            ) AS stations,
+
+            (
+                SELECT COUNT(*)
+                FROM cyanotoxins_measurements
+            ) AS measurements,
+
+            (
+                SELECT COUNT(*)
+                FROM safety_standards
+            ) AS standards
+    `;
+
+    db.query(sql, (err, results) => {
+
+        if (err) {
+            console.error(err);
+
+            return res.status(500).json({
+                error: "Failed to fetch database statistics"
+            });
+        }
+
+        const stats = results[0] || {};
+
+        publicCaching(res);
+
+        res.json({
+            waterTypes: Number(stats.waterTypes) || 0,
+            counties: Number(stats.counties) || 0,
+            stations: Number(stats.stations) || 0,
+            measurements: Number(stats.measurements) || 0,
+            standards: Number(stats.standards) || 0
+        });
     });
 });
 
@@ -1611,6 +1792,46 @@ app.get("/api/safety", (req, res) => {
         }
     );
 });
+
+
+// ======================================================
+// KEEP THE DATABASE POOL WARM
+// ======================================================
+
+// Aiven MySQL connections are opened over TLS. Creating a
+// brand-new connection costs several round trips, which is
+// why the very first request after a quiet period feels
+// slow.
+//
+// Running a trivial query every 4 minutes keeps at least
+// one pooled connection alive and authenticated, so real
+// requests can reuse it immediately.
+//
+// This changes no data and no behaviour - it only prevents
+// idle connections from being dropped.
+const POOL_KEEP_WARM_MS = 4 * 60 * 1000;
+
+const keepPoolWarm = setInterval(() => {
+
+    db.query("SELECT 1", (err) => {
+
+        if (err) {
+
+            // A failed ping is not fatal. The pool simply
+            // rebuilds the connection on the next request.
+            console.error(
+                "Database keep-warm ping failed:",
+                err.message
+            );
+        }
+    });
+
+}, POOL_KEEP_WARM_MS);
+
+// Do not let this timer keep the process alive on shutdown.
+if (typeof keepPoolWarm.unref === "function") {
+    keepPoolWarm.unref();
+}
 
 
 // ======================================================

@@ -36,6 +36,56 @@ const markerIcon = new L.Icon({
 });
 
 
+// --------------------------------------------------
+// Load the latest measurement for every station.
+//
+// The map only ever displays the NEWEST measurement per
+// station, but it previously downloaded the entire
+// measurement history and reduced it inside the browser.
+// Asking the backend for just those rows sends a few dozen
+// records instead of the whole table.
+//
+// Both endpoints return exactly the same columns, and the
+// existing latestMeasurementsByStation reduction below still
+// runs unchanged, so the map behaves identically.
+//
+// If the newer endpoint is unavailable - for example the
+// frontend is deployed before the backend - this falls back
+// to the original endpoint automatically.
+// --------------------------------------------------
+
+const loadLatestMeasurements = async () => {
+
+  try {
+
+    const response = await axios.get(
+      "https://toxictide-backend.onrender.com/api/stations/latest"
+    );
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+  } catch (err) {
+
+    console.warn(
+      "Using full measurement list instead:",
+      err
+    );
+
+  }
+
+  const response = await axios.get(
+    "https://toxictide-backend.onrender.com/api/measurements/all"
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
+
+};
+
+
 function WaterMap() {
 
   const navigate = useNavigate();
@@ -93,7 +143,7 @@ function WaterMap() {
 
         const [
           stationResponse,
-          measurementResponse,
+          measurementData,
           standardResponse
         ] = await Promise.all([
 
@@ -101,9 +151,7 @@ function WaterMap() {
             "https://toxictide-backend.onrender.com/api/stations"
           ),
 
-          axios.get(
-            "https://toxictide-backend.onrender.com/api/measurements/all"
-          ),
+          loadLatestMeasurements(),
 
           axios.get(
             "https://toxictide-backend.onrender.com/api/safety-standards"
@@ -117,7 +165,7 @@ function WaterMap() {
         );
 
         setMeasurements(
-          measurementResponse.data || []
+          measurementData || []
         );
 
         setStandards(
