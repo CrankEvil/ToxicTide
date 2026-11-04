@@ -1,0 +1,25 @@
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ToxicTide</title>
+    <script>
+      const path = window.location.pathname;
+      const base = "/ToxicTide";
+
+      if (path.startsWith(base + "/")) {
+        sessionStorage.setItem(
+          "redirect",
+          path.slice(base.length) + window.location.search + window.location.hash
+        );
+      }
+
+      window.location.replace(base + "/");
+    </script>
+  </head>
+  <body>
+    Redirecting to ToxicTide...
+  </body>
+</html>
+```
