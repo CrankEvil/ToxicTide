@@ -7,8 +7,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ToxicTide</title>
   </head>
+
   <body>
     <div id="root"></div>
+
+    <script>
+      const redirect = sessionStorage.getItem("redirect");
+
+      if (redirect) {
+        sessionStorage.removeItem("redirect");
+        window.history.replaceState(
+          null,
+          "",
+          "/ToxicTide" + redirect
+        );
+      }
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
