@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup
+  Popup,
+  useMapEvents
 } from "react-leaflet";
 
 import L from "leaflet";
@@ -15,30 +16,281 @@ import "../App.css";
 
 
 // --------------------------------------------------
-// Fix Leaflet's default marker images when using
-// React/Vite.
+// Custom station markers.
+//
+// BLUE = at least one valid official measurement.
+// RED  = no valid official measurement.
+//
+// Marker colors indicate data availability only.
+// They do NOT indicate whether water is safe.
 // --------------------------------------------------
 
-const markerIcon = new L.Icon({
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+const createStationIcon = (color) =>
+  new L.DivIcon({
+    className: "toxictide-station-marker",
+    html: `
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="32"
+        height="42"
+        viewBox="0 0 32 42"
+        role="img"
+        aria-label="${color === "#2585df" ? "Measurement available" : "No valid measurement"}"
+      >
+        <path
+          d="M16 1C7.7 1 1 7.7 1 16c0 11 15 25 15 25s15-14 15-25C31 7.7 24.3 1 16 1Z"
+          fill="${color}"
+          stroke="#ffffff"
+          stroke-width="2"
+        />
+        <circle
+          cx="16"
+          cy="16"
+          r="5.5"
+          fill="#ffffff"
+        />
+      </svg>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+    popupAnchor: [0, -38]
+  });
 
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+const measurementAvailableIcon =
+  createStationIcon("#2585df");
 
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+const noMeasurementIcon =
+  createStationIcon("#dc4545");
 
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+const MAP_STATE_STORAGE_KEY = "toxictide-water-map-state";
+
+function readSavedMapState() {
+  try {
+    const savedState = sessionStorage.getItem(MAP_STATE_STORAGE_KEY);
+    return savedState ? JSON.parse(savedState) : null;
+  } catch (error) {
+    console.warn("Could not restore the previous map state:", error);
+    return null;
+  }
+}
+
+function saveMapState(mapState) {
+  try {
+    sessionStorage.setItem(
+      MAP_STATE_STORAGE_KEY,
+      JSON.stringify(mapState)
+    );
+  } catch (error) {
+    console.warn("Could not save the current map state:", error);
+  }
+}
+
+
+// --------------------------------------------------
+// Track map movements so the current map view can
+// be passed to Station Details and restored later.
+// --------------------------------------------------
+
+function MapViewTracker({ mapViewRef, mapStateRef }) {
+  const map = useMapEvents({
+    // Leaflet fires moveend after a completed pan or zoom.
+    // Recording the view in a ref avoids rerendering MapContainer
+    // while the user is interacting with the map.
+    moveend: () => {
+      const center = map.getCenter();
+
+      mapViewRef.current = {
+        center: [center.lat, center.lng],
+        zoom: map.getZoom()
+      };
+
+      const latestState = mapStateRef.current || {};
+
+      mapStateRef.current = {
+        ...latestState,
+        center: mapViewRef.current.center,
+        zoom: mapViewRef.current.zoom
+      };
+
+      saveMapState(mapStateRef.current);
+    }
+  });
+
+  useEffect(() => {
+    // Capture the actual initial map view once the map is ready.
+    const center = map.getCenter();
+
+    mapViewRef.current = {
+      center: [center.lat, center.lng],
+      zoom: map.getZoom()
+    };
+
+    const latestState = mapStateRef.current || {};
+
+    mapStateRef.current = {
+      ...latestState,
+      center: mapViewRef.current.center,
+      zoom: mapViewRef.current.zoom
+    };
+
+    saveMapState(mapStateRef.current);
+  }, [map, mapViewRef, mapStateRef]);
+
+  return null;
+}
+
+// --------------------------------------------------
+// Individual station marker.
+//
+// The marker ref lets the selected station popup
+// reopen automatically when returning to the map.
+// --------------------------------------------------
+
+function StationMapMarker({
+  station,
+  latitude,
+  longitude,
+  icon,
+  selected,
+  onSelect,
+  onViewDetails,
+  safety,
+  userGroupName
+}) {
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    if (selected && markerRef.current) {
+      markerRef.current.openPopup();
+    }
+  }, [selected]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[latitude, longitude]}
+      icon={icon}
+      eventHandlers={{
+        click: () => onSelect(String(station.STATION_ID))
+      }}
+    >
+      <Popup>
+        {/*
+          The popup content is supplied by the parent
+          through the station-specific render below.
+        */}
+        <div className="toxictide-map-popup">
+          <h3>{station.STATION_NAME || "Unnamed Station"}</h3>
+
+          <p>
+            <strong>Station ID:</strong>{" "}
+            {station.STATION_ID || "N/A"}
+          </p>
+
+          <p>
+            <strong>Water Type:</strong>{" "}
+            {station.TYPE_NAME || "N/A"}
+          </p>
+
+          <p>
+            <strong>County:</strong>{" "}
+            {station.COUNTY_CODE || "N/A"}
+          </p>
+
+          {station.STATE && (
+            <p>
+              <strong>State:</strong> {station.STATE}
+            </p>
+          )}
+
+          <hr />
+
+          <h4>Safety for {userGroupName}</h4>
+
+          <p>
+            <strong>Status:</strong>{" "}
+            <span
+              style={{
+                fontWeight: "bold",
+                color:
+                  safety.status === "WITHIN THRESHOLD"
+                    ? "green"
+                    : safety.status === "ABOVE THRESHOLD"
+                    ? "red"
+                    : "#666"
+              }}
+            >
+              {safety.status}
+            </span>
+          </p>
+
+          <p>
+            <strong>Latest Microcystin:</strong>{" "}
+            {safety.measurement
+              ? `${safety.measurement.MICROCYSTIN_UGL} µg/L`
+              : "N/A"}
+          </p>
+
+          <p>
+            <strong>Sample Date:</strong>{" "}
+            {safety.measurement
+              ? new Date(
+                  safety.measurement.SAMPLE_DATE
+                ).toLocaleDateString()
+              : "N/A"}
+          </p>
+
+          <p>
+            <strong>Selected Threshold:</strong>{" "}
+            {safety.threshold !== null &&
+            safety.threshold !== undefined
+              ? `${safety.threshold} µg/L`
+              : "N/A"}
+          </p>
+
+          <p style={{ fontSize: "13px", lineHeight: "1.5" }}>
+            {safety.advisory}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => onViewDetails(station)}
+            className="toxictide-map-details-button"
+          >
+            View Station Details
+          </button>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 
 
 function WaterMap() {
-
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --------------------------------------------------
+  // Restore map context passed back from Station Details.
+  // --------------------------------------------------
+
+  const restoredMapState =
+    location.state?.mapState || readSavedMapState() || null;
+
+  // Keep the live map view in a ref, not React state.
+  // This prevents map gestures from triggering a React rerender,
+  // which can make Leaflet appear to jump or change zoom unexpectedly.
+  const mapViewRef = useRef({
+    center: restoredMapState?.center ?? null,
+    zoom: restoredMapState?.zoom ?? null
+  });
+
+  const [selectedStationId, setSelectedStationId] = useState(
+    restoredMapState?.selectedStationId
+      ? String(restoredMapState.selectedStationId)
+      : null
+  );
 
 
   // --------------------------------------------------
@@ -54,19 +306,25 @@ function WaterMap() {
   // Search and filters
   // --------------------------------------------------
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(
+    restoredMapState?.searchTerm || ""
+  );
 
-  const [selectedWaterType, setSelectedWaterType] =
-    useState("All");
+  const [selectedWaterType, setSelectedWaterType] = useState(
+    restoredMapState?.selectedWaterType || "All"
+  );
 
-  const [selectedCounty, setSelectedCounty] =
-    useState("All");
+  const [selectedCounty, setSelectedCounty] = useState(
+    restoredMapState?.selectedCounty || "All"
+  );
 
+  const [selectedUserGroup, setSelectedUserGroup] = useState(
+    restoredMapState?.selectedUserGroup || "Swimmers_Families"
+  );
 
-  // Selected user group controls which
-  // safety threshold is used.
-  const [selectedUserGroup, setSelectedUserGroup] =
-    useState("Swimmers_Families");
+  // The tracker reads this ref so map gestures can save the latest
+  // filters and selected station without triggering React rerenders.
+  const mapStateRef = useRef(restoredMapState || {});
 
 
   // --------------------------------------------------
@@ -78,25 +336,25 @@ function WaterMap() {
 
 
   // --------------------------------------------------
-  // Load official backend data
+  // Load official backend data.
+  //
+  // IMPORTANT:
+  // Existing backend endpoints are unchanged.
   // --------------------------------------------------
 
   useEffect(() => {
+    let isMounted = true;
 
     const loadMapData = async () => {
-
       try {
-
         setLoading(true);
         setError("");
-
 
         const [
           stationResponse,
           measurementResponse,
           standardResponse
         ] = await Promise.all([
-
           axios.get(
             "https://toxictide-backend.onrender.com/api/stations"
           ),
@@ -108,139 +366,101 @@ function WaterMap() {
           axios.get(
             "https://toxictide-backend.onrender.com/api/safety-standards"
           )
-
         ]);
 
+        if (!isMounted) return;
 
-        setStations(
-          stationResponse.data || []
-        );
-
-        setMeasurements(
-          measurementResponse.data || []
-        );
-
-        setStandards(
-          standardResponse.data || []
-        );
-
+        setStations(stationResponse.data || []);
+        setMeasurements(measurementResponse.data || []);
+        setStandards(standardResponse.data || []);
       } catch (err) {
+        console.error("Error loading water map data:", err);
 
-        console.error(
-          "Error loading water map data:",
-          err
-        );
-
-        setError(
-          "Unable to load monitoring data. Please make sure the ToxicTide backend is running."
-        );
-
+        if (isMounted) {
+          setError(
+            "Unable to load monitoring data. Please make sure the ToxicTide backend is running."
+          );
+        }
       } finally {
-
-        setLoading(false);
-
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-
     };
-
 
     loadMapData();
 
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
 
   // --------------------------------------------------
-  // Create a lookup containing the latest available
-  // non-null measurement for each station.
+  // Create a lookup of the latest valid official
+  // measurement for each station.
+  //
+  // A numeric zero is valid.
+  // NULL, undefined, empty and non-numeric values
+  // are unavailable and are ignored.
   // --------------------------------------------------
 
   const latestMeasurementsByStation = useMemo(() => {
-
     const latestMap = new Map();
 
-
     measurements.forEach((measurement) => {
+      const rawValue = measurement.MICROCYSTIN_UGL;
 
-      const value =
-        measurement.MICROCYSTIN_UGL;
-
-
-      // NULL / empty values are not treated as
-      // measurements.
       if (
-        value === null ||
-        value === undefined ||
-        value === ""
+        rawValue === null ||
+        rawValue === undefined ||
+        rawValue === ""
       ) {
-
         return;
-
       }
 
-
-      // Only actual numeric measurements should
-      // participate in safety calculations.
-      const numericValue =
-        Number(value);
-
+      const numericValue = Number(rawValue);
 
       if (!Number.isFinite(numericValue)) {
-
         return;
-
       }
-
-
-      const stationId =
-        String(measurement.STATION_ID);
-
-
-      const existing =
-        latestMap.get(stationId);
-
-
-      if (!existing) {
-
-        latestMap.set(
-          stationId,
-          measurement
-        );
-
-        return;
-
-      }
-
-
-      const currentDate =
-        new Date(
-          measurement.SAMPLE_DATE
-        );
-
-
-      const existingDate =
-        new Date(
-          existing.SAMPLE_DATE
-        );
-
 
       if (
-        Number.isFinite(currentDate.getTime()) &&
-        Number.isFinite(existingDate.getTime()) &&
-        currentDate > existingDate
+        measurement.STATION_ID === null ||
+        measurement.STATION_ID === undefined
       ) {
-
-        latestMap.set(
-          stationId,
-          measurement
-        );
-
+        return;
       }
 
+      const stationId = String(measurement.STATION_ID);
+      const existing = latestMap.get(stationId);
+
+      if (!existing) {
+        latestMap.set(stationId, measurement);
+        return;
+      }
+
+      const currentTime = new Date(
+        measurement.SAMPLE_DATE
+      ).getTime();
+
+      const existingTime = new Date(
+        existing.SAMPLE_DATE
+      ).getTime();
+
+      // Prefer a measurement with a valid, newer sample date.
+      if (
+        Number.isFinite(currentTime) &&
+        (
+          !Number.isFinite(existingTime) ||
+          currentTime > existingTime
+        )
+      ) {
+        latestMap.set(stationId, measurement);
+      }
     });
 
-
     return latestMap;
-
   }, [measurements]);
 
 
@@ -249,26 +469,18 @@ function WaterMap() {
   // --------------------------------------------------
 
   const standardsByUserGroup = useMemo(() => {
-
     const standardMap = new Map();
 
-
     standards.forEach((standard) => {
-
       if (standard.USER_GROUP) {
-
         standardMap.set(
           standard.USER_GROUP,
           standard
         );
-
       }
-
     });
 
-
     return standardMap;
-
   }, [standards]);
 
 
@@ -277,15 +489,8 @@ function WaterMap() {
   // --------------------------------------------------
 
   const selectedStandard = useMemo(() => {
-
-    return standardsByUserGroup.get(
-      selectedUserGroup
-    );
-
-  }, [
-    standardsByUserGroup,
-    selectedUserGroup
-  ]);
+    return standardsByUserGroup.get(selectedUserGroup);
+  }, [standardsByUserGroup, selectedUserGroup]);
 
 
   // --------------------------------------------------
@@ -293,20 +498,11 @@ function WaterMap() {
   // --------------------------------------------------
 
   const waterTypes = useMemo(() => {
-
     const types = stations
-      .map(
-        (station) =>
-          station.TYPE_NAME
-      )
+      .map((station) => station.TYPE_NAME)
       .filter(Boolean);
 
-
-    return [
-      "All",
-      ...new Set(types)
-    ];
-
+    return ["All", ...new Set(types)];
   }, [stations]);
 
 
@@ -315,12 +511,8 @@ function WaterMap() {
   // --------------------------------------------------
 
   const counties = useMemo(() => {
-
     const countyCodes = stations
-      .map(
-        (station) =>
-          station.COUNTY_CODE
-      )
+      .map((station) => station.COUNTY_CODE)
       .filter(
         (value) =>
           value !== null &&
@@ -328,12 +520,7 @@ function WaterMap() {
           value !== ""
       );
 
-
-    return [
-      "All",
-      ...new Set(countyCodes)
-    ];
-
+    return ["All", ...new Set(countyCodes)];
   }, [stations]);
 
 
@@ -342,29 +529,15 @@ function WaterMap() {
   // --------------------------------------------------
 
   const getUserGroupName = () => {
-
-    if (
-      selectedUserGroup ===
-      "Pet_Owners"
-    ) {
-
+    if (selectedUserGroup === "Pet_Owners") {
       return "Pet Owners";
-
     }
 
-
-    if (
-      selectedUserGroup ===
-      "Swimmers_Families"
-    ) {
-
+    if (selectedUserGroup === "Swimmers_Families") {
       return "Swimmers & Families";
-
     }
-
 
     return "Drinking Water";
-
   };
 
 
@@ -373,186 +546,88 @@ function WaterMap() {
   // --------------------------------------------------
 
   const getSafetyInformation = (station) => {
-
     const latestMeasurement =
       latestMeasurementsByStation.get(
         String(station.STATION_ID)
       );
 
+    const standard = selectedStandard;
 
-    const standard =
-      selectedStandard;
-
-
-    // ----------------------------------------------
-    // No official measurement available
-    // ----------------------------------------------
-
-    if (!latestMeasurement) {
-
-      return {
-
-        measurement: null,
-
-        threshold:
-          standard?.THRESHOLD_UGL ??
-          standard?.THRESHOLD ??
-          standard?.threshold ??
-          null,
-
-        status: "NO DATA",
-
-        advisory:
-          "No microcystin measurement is available for this station. Safety cannot be determined from the available data."
-
-      };
-
-    }
-
-
-    // ----------------------------------------------
-    // Convert actual database value to number
-    // ----------------------------------------------
-
-    const value =
-      Number(
-        latestMeasurement.MICROCYSTIN_UGL
-      );
-
-
-    // ----------------------------------------------
-    // Protect against invalid measurement values.
-    // ----------------------------------------------
-
-    if (
-      !Number.isFinite(value)
-    ) {
-
-      return {
-
-        measurement: null,
-
-        threshold:
-          standard?.THRESHOLD_UGL ??
-          standard?.THRESHOLD ??
-          standard?.threshold ??
-          null,
-
-        status: "NO DATA",
-
-        advisory:
-          "A valid microcystin measurement is not available for this station."
-
-      };
-
-    }
-
-
-    // ----------------------------------------------
-    // Get threshold from database
-    // ----------------------------------------------
-
-    const threshold =
+    const thresholdValue =
       standard?.THRESHOLD_UGL ??
       standard?.THRESHOLD ??
       standard?.threshold ??
       null;
 
+    if (!latestMeasurement) {
+      return {
+        measurement: null,
+        threshold: thresholdValue,
+        status: "NO DATA",
+        advisory:
+          "No microcystin measurement is available for this station. Safety cannot be determined from the available data."
+      };
+    }
 
-    // ----------------------------------------------
-    // No threshold available
-    // ----------------------------------------------
+    const value = Number(
+      latestMeasurement.MICROCYSTIN_UGL
+    );
+
+    if (!Number.isFinite(value)) {
+      return {
+        measurement: null,
+        threshold: thresholdValue,
+        status: "NO DATA",
+        advisory:
+          "A valid microcystin measurement is not available for this station."
+      };
+    }
 
     if (
-      threshold === null ||
-      threshold === undefined ||
-      threshold === ""
+      thresholdValue === null ||
+      thresholdValue === undefined ||
+      thresholdValue === ""
     ) {
-
       return {
-
         measurement: latestMeasurement,
-
         threshold: null,
-
         status: "NO STANDARD",
-
         advisory:
           "A safety threshold is not available for the selected user group."
-
       };
-
     }
 
+    const numericThreshold = Number(thresholdValue);
 
-    const numericThreshold =
-      Number(threshold);
-
-
-    // ----------------------------------------------
-    // Invalid threshold protection
-    // ----------------------------------------------
-
-    if (
-      !Number.isFinite(numericThreshold)
-    ) {
-
+    if (!Number.isFinite(numericThreshold)) {
       return {
-
         measurement: latestMeasurement,
-
         threshold: null,
-
         status: "NO STANDARD",
-
         advisory:
           "A valid safety threshold is not available for the selected user group."
-
       };
-
     }
 
-
-    // ----------------------------------------------
-    // Compare official measurement with
-    // database threshold.
-    // ----------------------------------------------
-
-    if (
-      value <= numericThreshold
-    ) {
-
+    if (value <= numericThreshold) {
       return {
-
         measurement: latestMeasurement,
-
         threshold: numericThreshold,
-
         status: "WITHIN THRESHOLD",
-
         advisory:
-          standard.ADVISORY_MESSAGE ||
+          standard?.ADVISORY_MESSAGE ||
           "The latest recorded measurement is within the selected database threshold."
-
       };
-
     }
-
 
     return {
-
       measurement: latestMeasurement,
-
       threshold: numericThreshold,
-
       status: "ABOVE THRESHOLD",
-
       advisory:
-        standard.ADVISORY_MESSAGE ||
+        standard?.ADVISORY_MESSAGE ||
         "The latest recorded measurement is above the selected database threshold."
-
     };
-
   };
 
 
@@ -561,47 +636,29 @@ function WaterMap() {
   // --------------------------------------------------
 
   const filteredStations = useMemo(() => {
-
-    const search =
-      searchTerm
-        .trim()
-        .toLowerCase();
-
+    const search = searchTerm.trim().toLowerCase();
 
     return stations.filter((station) => {
+      const stationName = String(
+        station.STATION_NAME || ""
+      ).toLowerCase();
 
-      const stationName =
-        String(
-          station.STATION_NAME || ""
-        ).toLowerCase();
+      const stationId = String(
+        station.STATION_ID || ""
+      ).toLowerCase();
 
+      const county = String(
+        station.COUNTY_CODE || ""
+      ).toLowerCase();
 
-      const stationId =
-        String(
-          station.STATION_ID || ""
-        ).toLowerCase();
+      const waterType = String(
+        station.TYPE_NAME || ""
+      ).toLowerCase();
 
+      const state = String(
+        station.STATE || ""
+      ).toLowerCase();
 
-      const county =
-        String(
-          station.COUNTY_CODE || ""
-        ).toLowerCase();
-
-
-      const waterType =
-        String(
-          station.TYPE_NAME || ""
-        ).toLowerCase();
-
-
-      const state =
-        String(
-          station.STATE || ""
-        ).toLowerCase();
-
-
-      // Search supports station name,
-      // station ID, county, water type and state.
       const matchesSearch =
         !search ||
         stationName.includes(search) ||
@@ -610,29 +667,21 @@ function WaterMap() {
         waterType.includes(search) ||
         state.includes(search);
 
-
       const matchesWaterType =
         selectedWaterType === "All" ||
-        station.TYPE_NAME ===
-          selectedWaterType;
-
+        station.TYPE_NAME === selectedWaterType;
 
       const matchesCounty =
         selectedCounty === "All" ||
-        String(
-          station.COUNTY_CODE
-        ) ===
+        String(station.COUNTY_CODE) ===
           String(selectedCounty);
-
 
       return (
         matchesSearch &&
         matchesWaterType &&
         matchesCounty
       );
-
     });
-
   }, [
     stations,
     searchTerm,
@@ -646,26 +695,84 @@ function WaterMap() {
   // --------------------------------------------------
 
   const mappedStationCount = useMemo(() => {
+    return filteredStations.filter((station) => {
+      const latitude = Number(station.LATITUDE);
+      const longitude = Number(station.LONGITUDE);
 
-    return filteredStations.filter(
-      (station) => {
-
-        const latitude =
-          Number(station.LATITUDE);
-
-        const longitude =
-          Number(station.LONGITUDE);
-
-
-        return (
-          Number.isFinite(latitude) &&
-          Number.isFinite(longitude)
-        );
-
-      }
-    ).length;
-
+      return (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180
+      );
+    }).length;
   }, [filteredStations]);
+
+
+  // --------------------------------------------------
+  // Save current map view.
+  // --------------------------------------------------
+
+  // The MapViewTracker writes directly to mapViewRef.
+  // No state update is needed while the user pans or zooms.
+
+
+  // --------------------------------------------------
+  // Build the complete map state to pass to Station
+  // Details. This includes map view, selected station,
+  // search, filters and selected user group.
+  // --------------------------------------------------
+
+  const buildMapState = (stationId = selectedStationId) => ({
+    center: mapViewRef.current.center,
+    zoom: mapViewRef.current.zoom,
+    selectedStationId: stationId,
+    searchTerm,
+    selectedWaterType,
+    selectedCounty,
+    selectedUserGroup
+  });
+
+  // Keep the latest non-map controls available to MapViewTracker.
+  mapStateRef.current = buildMapState();
+
+  // Persist selected station and filters when they change. This also
+  // restores the previously open popup if the map route is remounted.
+  useEffect(() => {
+    const currentState = buildMapState();
+    mapStateRef.current = currentState;
+    saveMapState(currentState);
+  }, [
+    selectedStationId,
+    searchTerm,
+    selectedWaterType,
+    selectedCounty,
+    selectedUserGroup
+  ]);
+
+
+  // --------------------------------------------------
+  // Open Station Details while preserving map state.
+  // --------------------------------------------------
+
+  const openStationDetails = (station) => {
+    const stationId = String(station.STATION_ID);
+
+    setSelectedStationId(stationId);
+
+    const mapState = buildMapState(stationId);
+    mapStateRef.current = mapState;
+    saveMapState(mapState);
+
+    navigate("/station", {
+      state: {
+        station,
+        mapState
+      }
+    });
+  };
 
 
   // --------------------------------------------------
@@ -673,11 +780,9 @@ function WaterMap() {
   // --------------------------------------------------
 
   const clearFilters = () => {
-
     setSearchTerm("");
     setSelectedWaterType("All");
     setSelectedCounty("All");
-
   };
 
 
@@ -686,23 +791,12 @@ function WaterMap() {
   // --------------------------------------------------
 
   if (loading) {
-
     return (
-
       <div className="page-container">
-
-        <h2>
-          Water Monitoring Map
-        </h2>
-
-        <p>
-          Loading official monitoring station data...
-        </p>
-
+        <h2>Water Monitoring Map</h2>
+        <p>Loading official monitoring station data...</p>
       </div>
-
     );
-
   }
 
 
@@ -711,23 +805,12 @@ function WaterMap() {
   // --------------------------------------------------
 
   if (error) {
-
     return (
-
       <div className="page-container">
-
-        <h2>
-          Water Monitoring Map
-        </h2>
-
-        <p>
-          {error}
-        </p>
-
+        <h2>Water Monitoring Map</h2>
+        <p>{error}</p>
       </div>
-
     );
-
   }
 
 
@@ -736,49 +819,50 @@ function WaterMap() {
   // --------------------------------------------------
 
   return (
-
     <div className="page-container">
 
-
       {/* ------------------------------------------ */}
-      {/* Back navigation                            */}
-      {/* ------------------------------------------ */}
-
-      <button
-        onClick={() => navigate("/dashboard")}
-        className="back-button"
-      >
-        ← Back to Dashboard
-      </button>
-
-
-      {/* ------------------------------------------ */}
-      {/* Page heading                               */}
+      {/* STICKY PAGE HEADER                         */}
+      {/* The Back button and page heading remain    */}
+      {/* visible while the user scrolls.            */}
+      {/* All public pages will use the same         */}
+      {/* shared header and Back-button styling.     */}
       {/* ------------------------------------------ */}
 
       <div
+        className="toxictide-page-sticky-header"
         style={{
+          position: "sticky",
+          top: "72px",
+          zIndex: 900,
+          background: "#ffffff",
+          padding: "12px 0 14px",
           marginBottom: "20px"
         }}
       >
 
-        <h1>
-          Water Monitoring Map
-        </h1>
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          className="back-button toxictide-page-back-button"
+        >
+          ← Back to Dashboard
+        </button>
 
-        <p>
-          Explore official water monitoring stations
-          and check the latest available microcystin
-          information.
-        </p>
+        <div className="toxictide-page-heading">
+          <h1>Water Monitoring Map</h1>
+
+          <p>
+            Explore official water monitoring stations
+            and check the latest available microcystin
+            information.
+          </p>
+        </div>
 
       </div>
 
 
-      {/* ------------------------------------------ */}
-      {/* Safety user group selector                 */}
-      {/* ------------------------------------------ */}
-
+      {/* Safety user group selector */}
       <div
         style={{
           padding: "18px",
@@ -787,15 +871,9 @@ function WaterMap() {
           marginBottom: "20px"
         }}
       >
-
-        <h3
-          style={{
-            marginTop: 0
-          }}
-        >
+        <h3 style={{ marginTop: 0 }}>
           Check Safety For
         </h3>
-
 
         <p>
           Select the user group to compare available
@@ -803,13 +881,10 @@ function WaterMap() {
           database safety threshold.
         </p>
 
-
         <select
           value={selectedUserGroup}
           onChange={(e) =>
-            setSelectedUserGroup(
-              e.target.value
-            )
+            setSelectedUserGroup(e.target.value)
           }
           style={{
             padding: "10px",
@@ -818,28 +893,18 @@ function WaterMap() {
             border: "1px solid #ccc"
           }}
         >
-
-          <option value="Pet_Owners">
-            Pet Owners
-          </option>
-
+          <option value="Pet_Owners">Pet Owners</option>
           <option value="Swimmers_Families">
             Swimmers & Families
           </option>
-
           <option value="Drinking_Water">
             Drinking Water
           </option>
-
         </select>
-
       </div>
 
 
-      {/* ------------------------------------------ */}
-      {/* Search and filters                         */}
-      {/* ------------------------------------------ */}
-
+      {/* Search and filters */}
       <div
         style={{
           display: "flex",
@@ -848,15 +913,10 @@ function WaterMap() {
           marginBottom: "15px"
         }}
       >
-
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) =>
-            setSearchTerm(
-              e.target.value
-            )
-          }
+          onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search station, ID, county, state, or water type..."
           style={{
             padding: "10px",
@@ -866,70 +926,44 @@ function WaterMap() {
           }}
         />
 
-
         <select
           value={selectedWaterType}
           onChange={(e) =>
-            setSelectedWaterType(
-              e.target.value
-            )
+            setSelectedWaterType(e.target.value)
           }
           style={{
             padding: "10px",
             borderRadius: "8px"
           }}
         >
-
-          {waterTypes.map(
-            (type) => (
-
-              <option
-                key={type}
-                value={type}
-              >
-                {type === "All"
-                  ? "All Water Types"
-                  : type}
-              </option>
-
-            )
-          )}
-
+          {waterTypes.map((type) => (
+            <option key={type} value={type}>
+              {type === "All" ? "All Water Types" : type}
+            </option>
+          ))}
         </select>
-
 
         <select
           value={selectedCounty}
           onChange={(e) =>
-            setSelectedCounty(
-              e.target.value
-            )
+            setSelectedCounty(e.target.value)
           }
           style={{
             padding: "10px",
             borderRadius: "8px"
           }}
         >
-
-          {counties.map(
-            (county) => (
-
-              <option
-                key={county}
-                value={county}
-              >
-                {county === "All"
-                  ? "All Counties"
-                  : `County ${county}`}
-              </option>
-
-            )
-          )}
-
+          {counties.map((county) => (
+            <option key={county} value={county}>
+              {county === "All"
+                ? "All Counties"
+                : `County ${county}`}
+            </option>
+          ))}
         </select>
 
-
         <button
+          type="button"
           onClick={clearFilters}
           style={{
             padding: "10px 16px",
@@ -939,14 +973,10 @@ function WaterMap() {
         >
           Clear Filters
         </button>
-
       </div>
 
 
-      {/* ------------------------------------------ */}
-      {/* Station count                              */}
-      {/* ------------------------------------------ */}
-
+      {/* Station count */}
       <div
         style={{
           display: "flex",
@@ -955,35 +985,19 @@ function WaterMap() {
           marginBottom: "15px"
         }}
       >
-
         <p style={{ margin: 0 }}>
-
-          <strong>
-            {filteredStations.length}
-          </strong>{" "}
-
+          <strong>{filteredStations.length}</strong>{" "}
           monitoring stations matched
-
         </p>
-
 
         <p style={{ margin: 0 }}>
-
-          <strong>
-            {mappedStationCount}
-          </strong>{" "}
-
+          <strong>{mappedStationCount}</strong>{" "}
           stations shown on map
-
         </p>
-
       </div>
 
 
-      {/* ------------------------------------------ */}
-      {/* Map legend                                 */}
-      {/* ------------------------------------------ */}
-
+      {/* Map legend */}
       <div
         style={{
           display: "flex",
@@ -993,42 +1007,51 @@ function WaterMap() {
           fontSize: "14px"
         }}
       >
-
         <span>
-          🟢 Within Selected Threshold
+          <span style={{ color: "#2585df", fontWeight: "bold" }}>
+            ●
+          </span>{" "}
+          Valid Official Measurement Available
         </span>
 
         <span>
-          🔴 Above Selected Threshold
+          <span style={{ color: "#dc4545", fontWeight: "bold" }}>
+            ●
+          </span>{" "}
+          No Valid Official Measurement
         </span>
-
-        <span>
-          ⚪ No Measurement Available
-        </span>
-
-        <span>
-          ⚫ No Standard Available
-        </span>
-
       </div>
 
 
-      {/* ------------------------------------------ */}
-      {/* Interactive Leaflet map                    */}
-      {/* ------------------------------------------ */}
-
+      {/* Interactive Leaflet map */}
       <MapContainer
-        // Fit the initial view to Ohio with a small margin.
-        // This does not restrict panning or zooming. All station records,
-        // markers, filters, popups, and safety calculations remain available.
-        bounds={[
-          [38.35, -84.85],
-          [42.05, -80.45]
-        ]}
-        boundsOptions={{
-          padding: [20, 20]
-        }}
-        zoomSnap={0.25}
+        {...(
+          mapViewRef.current.center &&
+          mapViewRef.current.zoom !== null &&
+          mapViewRef.current.zoom !== undefined
+            ? {
+                center: mapViewRef.current.center,
+                zoom: mapViewRef.current.zoom
+              }
+            : {
+                bounds: [
+                  [38.35, -84.85],
+                  [42.05, -80.45]
+                ],
+                boundsOptions: {
+                  padding: [20, 20]
+                }
+              }
+        )}
+        minZoom={4}
+        maxZoom={18}
+        zoomSnap={1}
+        zoomDelta={1}
+        wheelPxPerZoomLevel={120}
+        touchZoom="center"
+        bounceAtZoomLimits={false}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
         style={{
           height: "600px",
           width: "100%",
@@ -1036,286 +1059,61 @@ function WaterMap() {
           marginBottom: "20px"
         }}
       >
-
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-
-        {filteredStations.map(
-          (station) => {
-
-            // --------------------------------------
-            // Validate coordinates
-            // --------------------------------------
-
-            const latitude =
-              Number(
-                station.LATITUDE
-              );
-
-            const longitude =
-              Number(
-                station.LONGITUDE
-              );
-
-
-            if (
-              !Number.isFinite(latitude) ||
-              !Number.isFinite(longitude)
-            ) {
-
-              return null;
-
-            }
-
-
-            // --------------------------------------
-            // Calculate station safety information
-            // --------------------------------------
-
-            const safety =
-              getSafetyInformation(
-                station
-              );
-
-
-            return (
-
-              <Marker
-                key={
-                  station.STATION_ID
-                }
-                position={[
-                  latitude,
-                  longitude
-                ]}
-                icon={markerIcon}
-              >
-
-                <Popup>
-
-                  <div
-                    style={{
-                      minWidth: "250px"
-                    }}
-                  >
-
-
-                    {/* Station name */}
-
-                    <h3
-                      style={{
-                        marginBottom: "8px"
-                      }}
-                    >
-                      {station.STATION_NAME ||
-                        "Unnamed Station"}
-                    </h3>
-
-
-                    {/* Station ID */}
-
-                    <p>
-
-                      <strong>
-                        Station ID:
-                      </strong>{" "}
-
-                      {station.STATION_ID ||
-                        "N/A"}
-
-                    </p>
-
-
-                    {/* Water type */}
-
-                    <p>
-
-                      <strong>
-                        Water Type:
-                      </strong>{" "}
-
-                      {station.TYPE_NAME ||
-                        "N/A"}
-
-                    </p>
-
-
-                    {/* County */}
-
-                    <p>
-
-                      <strong>
-                        County:
-                      </strong>{" "}
-
-                      {station.COUNTY_CODE ||
-                        "N/A"}
-
-                    </p>
-
-
-                    {/* State */}
-
-                    {station.STATE && (
-
-                      <p>
-
-                        <strong>
-                          State:
-                        </strong>{" "}
-
-                        {station.STATE}
-
-                      </p>
-
-                    )}
-
-
-                    <hr />
-
-
-                    {/* Safety result */}
-
-                    <h4>
-
-                      Safety for{" "}
-
-                      {getUserGroupName()}
-
-                    </h4>
-
-
-                    <p>
-
-                      <strong>
-                        Status:
-                      </strong>{" "}
-
-                      <span
-                        style={{
-                          fontWeight: "bold",
-
-                          color:
-                            safety.status ===
-                            "WITHIN THRESHOLD"
-                              ? "green"
-                              : safety.status ===
-                                "ABOVE THRESHOLD"
-                              ? "red"
-                              : "#666"
-                        }}
-                      >
-                        {safety.status}
-                      </span>
-
-                    </p>
-
-
-                    {/* Latest measurement */}
-
-                    <p>
-
-                      <strong>
-                        Latest Microcystin:
-                      </strong>{" "}
-
-                      {safety.measurement
-                        ? `${safety.measurement.MICROCYSTIN_UGL} µg/L`
-                        : "N/A"}
-
-                    </p>
-
-
-                    {/* Sample date */}
-
-                    <p>
-
-                      <strong>
-                        Sample Date:
-                      </strong>{" "}
-
-                      {safety.measurement
-                        ? new Date(
-                            safety.measurement.SAMPLE_DATE
-                          ).toLocaleDateString()
-                        : "N/A"}
-
-                    </p>
-
-
-                    {/* Selected threshold */}
-
-                    <p>
-
-                      <strong>
-                        Selected Threshold:
-                      </strong>{" "}
-
-                      {safety.threshold !== null &&
-                      safety.threshold !== undefined
-                        ? `${safety.threshold} µg/L`
-                        : "N/A"}
-
-                    </p>
-
-
-                    {/* Advisory */}
-
-                    <p
-                      style={{
-                        fontSize: "13px",
-                        lineHeight: "1.5"
-                      }}
-                    >
-                      {safety.advisory}
-                    </p>
-
-
-                    {/* Station details */}
-
-                    <button
-                      onClick={() =>
-                        navigate(
-                          "/station",
-                          {
-                            state: {
-                              station
-                            }
-                          }
-                        )
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "9px",
-                        marginTop: "8px",
-                        cursor: "pointer",
-                        borderRadius: "7px"
-                      }}
-                    >
-                      View Station Details
-                    </button>
-
-                  </div>
-
-                </Popup>
-
-              </Marker>
-
-            );
-
+        <MapViewTracker
+          mapViewRef={mapViewRef}
+          mapStateRef={mapStateRef}
+        />
+
+        {filteredStations.map((station) => {
+          const latitude = Number(station.LATITUDE);
+          const longitude = Number(station.LONGITUDE);
+
+          if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+          ) {
+            return null;
           }
-        )}
 
+          const stationId = String(station.STATION_ID);
+
+          const hasValidMeasurement =
+            latestMeasurementsByStation.has(stationId);
+
+          const safety = getSafetyInformation(station);
+
+          return (
+            <StationMapMarker
+              key={station.STATION_ID}
+              station={station}
+              latitude={latitude}
+              longitude={longitude}
+              icon={
+                hasValidMeasurement
+                  ? measurementAvailableIcon
+                  : noMeasurementIcon
+              }
+              selected={selectedStationId === stationId}
+              onSelect={setSelectedStationId}
+              onViewDetails={openStationDetails}
+              safety={safety}
+              userGroupName={getUserGroupName()}
+            />
+          );
+        })}
       </MapContainer>
 
 
-      {/* ------------------------------------------ */}
-      {/* Data handling information                  */}
-      {/* ------------------------------------------ */}
-
+      {/* Data handling information */}
       <div
         style={{
           padding: "15px",
@@ -1324,32 +1122,23 @@ function WaterMap() {
           marginBottom: "30px"
         }}
       >
+        <strong>Data note:</strong>
 
-        <strong>
-          Data note:
-        </strong>
-
-        <p
-          style={{
-            marginBottom: 0
-          }}
-        >
-          ToxicTide does not assume a station is safe
-          when a microcystin measurement is unavailable.
-          Stations without an available measurement are
-          shown as <strong>No Data</strong>. Safety
-          comparisons use the selected user group's
-          threshold stored in the database.
+        <p style={{ marginBottom: 0 }}>
+          Blue markers indicate stations with at least one
+          valid official microcystin measurement. Red markers
+          indicate stations without a valid official
+          measurement. A recorded value of zero is valid.
+          Missing or invalid data is never treated as safe.
+          Marker colors show measurement availability, not
+          the safety result. Safety comparisons use the
+          selected user group's threshold stored in the
+          database.
         </p>
-
       </div>
 
-
     </div>
-
   );
-
 }
-
 
 export default WaterMap;

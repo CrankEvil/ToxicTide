@@ -3,10 +3,14 @@ const db = require("./db");
 // Express handles our backend API
 const express = require("express");
 
-// CORS allows our React frontend to communicate with the backend
+// CORS allows our React frontend on port 5173
+// to communicate with the backend on port 5000
 const cors = require("cors");
 
 const bcrypt = require("bcryptjs");
+
+// Gzip responses (big JSON like /measurements/all shrinks ~80%)
+const compression = require("compression");
 
 // Admin login token helpers
 const {
@@ -21,14 +25,63 @@ const app = express();
 // BASIC SERVER CONFIGURATION
 // ======================================================
 
+// Compress all responses
+app.use(compression());
+
 // Allow the backend to read JSON data sent by the frontend
 app.use(express.json());
 
 // Enable CORS for the React frontend
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
+// ======================================================
+// SIMPLE IN-MEMORY CACHE FOR PUBLIC READ-ONLY ENDPOINTS
+// ======================================================
+// Public data changes rarely (only when an admin edits it),
+// so we keep responses for 60 seconds and skip the database.
+// The cache is cleared automatically after any admin write.
 
+const CACHE_TTL_MS = 60 * 1000;
+const responseCache = new Map();
+
+function cachePublic(req, res, next) {
+    const key = req.originalUrl;
+    const hit = responseCache.get(key);
+
+    if (hit && Date.now() - hit.time < CACHE_TTL_MS) {
+        res.set("X-Cache", "HIT");
+        res.set("Cache-Control", "public, max-age=60");
+        return res.json(hit.body);
+    }
+
+    const originalJson = res.json.bind(res);
+
+    res.json = (body) => {
+        if (res.statusCode === 200) {
+            responseCache.set(key, { time: Date.now(), body });
+        }
+        res.set("Cache-Control", "public, max-age=60");
+        return originalJson(body);
+    };
+
+    next();
+}
+
+// Clear cache after any admin POST / PUT / DELETE
+app.use("/api/admin", (req, res, next) => {
+    if (req.method !== "GET") {
+        res.on("finish", () => responseCache.clear());
+    }
+    next();
+});
+
+// Public cached routes
+app.use("/api/stations", cachePublic);
+app.use("/api/measurements", cachePublic);
+app.use("/api/safety-standards", cachePublic);
+app.use("/api/water-types", cachePublic);
+app.use("/api/counties", cachePublic);
+const PORT = process.env.PORT || 5000;
 
 // ======================================================
 // PUBLIC SERVER TEST
@@ -36,6 +89,11 @@ const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
     res.send("ToxicTide backend is running!");
+});
+
+// Lightweight health check (no database) for keep-alive pings
+app.get("/health", (req, res) => {
+    res.status(200).send("ok");
 });
 
 
@@ -323,7 +381,7 @@ app.post("/api/admin/login", (req, res) => {
 
 // Every route beginning with /api/admin now requires
 // a valid administrator token.
-
+//
 // IMPORTANT:
 // /api/admin/login was defined above this middleware,
 // so login itself remains publicly accessible.

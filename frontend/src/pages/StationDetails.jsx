@@ -20,6 +20,19 @@ import {
 import "../App.css";
 
 
+const MAP_STATE_STORAGE_KEY = "toxictide-water-map-state";
+
+function readSavedMapState() {
+  try {
+    const savedState = sessionStorage.getItem(MAP_STATE_STORAGE_KEY);
+    return savedState ? JSON.parse(savedState) : null;
+  } catch (error) {
+    console.warn("Could not restore the previous map state:", error);
+    return null;
+  }
+}
+
+
 function StationDetails() {
 
   // ============================================
@@ -28,6 +41,12 @@ function StationDetails() {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // The Water Map sends its complete view and filter state
+  // when the user opens a station. sessionStorage is a
+  // fallback for browser Back or a route remount.
+  const mapStateToReturn =
+    location.state?.mapState || readSavedMapState() || null;
 
   // The Water Map and Stations pages send the
   // complete station object through route state.
@@ -56,7 +75,10 @@ function StationDetails() {
     useState([]);
 
   const [selectedUserGroup, setSelectedUserGroup] =
-    useState("Swimmers_Families");
+    useState(
+      mapStateToReturn?.selectedUserGroup ||
+      "Swimmers_Families"
+    );
 
 
   // ============================================
@@ -598,7 +620,11 @@ function StationDetails() {
           <button
             className="primary-button"
             onClick={() =>
-              navigate("/map")
+              navigate("/map", {
+                state: {
+                  mapState: mapStateToReturn
+                }
+              })
             }
           >
             Choose a Monitoring Station
@@ -623,26 +649,38 @@ function StationDetails() {
 
 
       {/* ========================================
-          BACK TO WATER MAP
+          STICKY PAGE HEADER
+          The Back button and station heading stay
+          visible below the main navigation.
           ======================================== */}
 
-      <button
-        className="back-button"
-        onClick={() =>
-          navigate("/map")
-        }
+      <div
+        className="toxictide-page-sticky-header"
+        style={{
+          position: "sticky",
+          top: "72px",
+          zIndex: 900,
+          background: "#ffffff",
+          padding: "12px 0 14px",
+          marginBottom: "20px"
+        }}
       >
-        ← Back to Water Map
-      </button>
 
+        <button
+          type="button"
+          className="back-button toxictide-page-back-button"
+          onClick={() =>
+            navigate("/map", {
+              state: {
+                mapState: mapStateToReturn
+              }
+            })
+          }
+        >
+          ← Back to Water Map
+        </button>
 
-      {/* ========================================
-          STATION HEADER
-          ======================================== */}
-
-      <div className="map-header station-page-header">
-
-        <div className="map-heading-content">
+        <div className="toxictide-page-heading map-heading-content">
 
           <p className="section-label">
             MONITORING STATION

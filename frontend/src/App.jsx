@@ -1,23 +1,12 @@
 
-// ============================================================
-// TOXICTIDE — MAIN APPLICATION ROUTER
-// ============================================================
-//
-// PERFORMANCE OPTIMIZATION:
-// 1. Public pages load only when visited.
-// 2. Admin pages load only when visited.
-// 3. Admin Login does not download the Admin Dashboard.
-// 4. Maps, charts, and data pages are split into separate chunks.
-// 5. Existing routes and ProtectedRoute behavior are preserved.
-//
-// IMPORTANT:
-// - No UI redesign.
-// - No route URL changes.
-// - No authentication logic changes.
-// ============================================================
-
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  Outlet,
+  useLocation
+} from "react-router-dom";
 
 // ============================================================
 // PUBLIC PAGES — LAZY LOADING
@@ -74,6 +63,50 @@ const AdminCommunityReports = lazy(() => import("./admin/AdminCommunityReports")
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // ============================================================
+// SHARED PUBLIC LAYOUT
+// ============================================================
+
+function PublicLayout() {
+  const location = useLocation();
+
+  // Home already contains its own navigation bar.
+  // Avoid displaying two navigation bars on the Home page.
+  const isHomePage = location.pathname === "/";
+
+  return (
+    <>
+      {!isHomePage && (
+        <nav
+          className="navbar"
+          aria-label="Main navigation"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10000,
+            width: "100%"
+          }}
+        >
+          {/* Website logo only */}
+          <Link
+            to="/"
+            className="logo"
+            style={{
+              textDecoration: "none",
+              color: "inherit"
+            }}
+          >
+            🌊 ToxicTide
+          </Link>
+        </nav>
+      )}
+
+      {/* Display the selected public page */}
+      <Outlet />
+    </>
+  );
+}
+
+// ============================================================
 // MAIN APPLICATION
 // ============================================================
 
@@ -83,39 +116,53 @@ function App() {
       <Routes>
 
         {/* ======================================
-            PUBLIC ROUTES
+            PUBLIC PAGE LAYOUT
             ====================================== */}
 
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<PublicLayout />}>
 
-        <Route path="/dashboard" element={<Dashboard />} />
+          {/* Home */}
+          <Route index element={<Home />} />
 
-        <Route path="/map" element={<WaterMap />} />
+          {/* Main public pages */}
+          <Route path="dashboard" element={<Dashboard />} />
 
-        <Route path="/station" element={<StationDetails />} />
+          <Route path="map" element={<WaterMap />} />
 
-        <Route path="/safety" element={<SafetyCheck />} />
+          <Route path="station" element={<StationDetails />} />
 
-        <Route path="/data" element={<DataCenter />} />
+          <Route path="safety" element={<SafetyCheck />} />
 
-        <Route path="/data/water-types" element={<WaterTypes />} />
+          {/* Data Center */}
+          <Route path="data" element={<DataCenter />} />
 
-        <Route path="/data/counties" element={<Counties />} />
+          <Route path="data/water-types" element={<WaterTypes />} />
 
-        <Route path="/data/stations" element={<Stations />} />
+          <Route path="data/counties" element={<Counties />} />
 
-        <Route path="/data/measurements" element={<Measurements />} />
+          <Route path="data/stations" element={<Stations />} />
 
-        <Route path="/data/safety-standards" element={<SafetyStandards />} />
+          <Route path="data/measurements" element={<Measurements />} />
 
-        <Route path="/report" element={<CommunityReport />} />
+          <Route
+            path="data/safety-standards"
+            element={<SafetyStandards />}
+          />
+
+          {/* Community Reporting */}
+          <Route path="report" element={<CommunityReport />} />
+
+        </Route>
 
         {/* ======================================
             ADMIN LOGIN
             Login remains publicly accessible.
             ====================================== */}
 
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
 
         {/* ======================================
             PROTECTED ADMIN ROUTES
