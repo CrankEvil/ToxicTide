@@ -686,7 +686,14 @@ function StationDetails() {
             MONITORING STATION
           </p>
 
-          <h1>
+          {/* FIX: proper line-height so long station names
+              that wrap onto two lines no longer overlap. */}
+          <h1
+            style={{
+              lineHeight: "1.2",
+              overflowWrap: "anywhere"
+            }}
+          >
             {station.STATION_NAME ||
               "Monitoring Station"}
           </h1>

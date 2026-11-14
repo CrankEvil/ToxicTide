@@ -1001,23 +1001,56 @@ function WaterMap() {
       <div
         style={{
           display: "flex",
-          gap: "18px",
+          gap: "24px",
           flexWrap: "wrap",
           marginBottom: "12px",
-          fontSize: "14px"
+          fontSize: "14px",
+          alignItems: "center"
         }}
       >
-        <span>
-          <span style={{ color: "#2585df", fontWeight: "bold" }}>
-            ●
-          </span>{" "}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px"
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: "18px",
+              height: "18px",
+              backgroundColor: "#2585df",
+              border: "2px solid #ffffff",
+              boxShadow: "0 0 0 1px #1a5fa3",
+              borderRadius: "2px",
+              flexShrink: 0
+            }}
+          />
           Valid Official Measurement Available
         </span>
 
-        <span>
-          <span style={{ color: "#dc4545", fontWeight: "bold" }}>
-            ●
-          </span>{" "}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px"
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: "18px",
+              height: "18px",
+              backgroundColor: "#dc4545",
+              border: "2px solid #ffffff",
+              boxShadow: "0 0 0 1px #a32b2b",
+              borderRadius: "2px",
+              flexShrink: 0
+            }}
+          />
           No Valid Official Measurement
         </span>
       </div>
